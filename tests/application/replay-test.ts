@@ -1,0 +1,334 @@
+import {
+  click,
+  fillIn,
+  find,
+  findAll,
+  settled,
+  triggerEvent,
+  triggerKeyEvent,
+  visit,
+  waitFor,
+  waitUntil,
+} from "@ember/test-helpers";
+import { module, test } from "qunit";
+import { setupApplicationTest } from "ember-qunit";
+
+import videoUrl from "../fixtures/ten-seconds.webm?url";
+
+async function clickTab(name: string) {
+  const tab = findAll('[role="tab"]').find((element) => element.textContent?.trim() === name);
+
+  if (!tab) throw new Error(`No tab named ${name}`);
+
+  await click(tab);
+}
+
+function video() {
+  const element = find("video");
+
+  if (!(element instanceof HTMLVideoElement)) throw new Error("No video is rendered");
+
+  return element;
+}
+
+/**
+ * Seeks like the native video controls do,
+ * then waits for the time display to show it.
+ */
+async function seekTo(seconds: number, shown: string) {
+  video().currentTime = seconds;
+  await waitUntil(() => find("[data-test-now]")?.textContent === shown);
+}
+
+async function theTestVideo() {
+  const blob = await (await fetch(videoUrl)).blob();
+
+  return new File([blob], "ten-seconds.webm", { type: "video/webm" });
+}
+
+/**
+ * A real DragEvent with a file, as the browser makes for a drag from the desktop.
+ */
+async function dragOverPage(type: string, file: File) {
+  const dataTransfer = new DataTransfer();
+
+  dataTransfer.items.add(file);
+  document.body.dispatchEvent(
+    new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }),
+  );
+  await settled();
+}
+
+async function loadTheTestVideo() {
+  await visit("/");
+  await clickTab("File on disk");
+
+  await triggerEvent(".nvp__file-drop input[type=file]", "change", {
+    files: [await theTestVideo()],
+  });
+  await waitFor("[data-test-duration]");
+}
+
+module("Application | replay", function (hooks) {
+  setupApplicationTest(hooks);
+
+  test("with no video, a welcome explains the privacy", async function (assert) {
+    await visit("/");
+
+    assert.dom("[data-test-welcome] h2").hasText("Pick a video to start");
+    assert.dom("[data-test-welcome]").includesText("no server and no permissions");
+    assert.dom("[data-test-welcome] svg").hasAria("hidden", "true");
+
+    await loadTheTestVideo();
+
+    assert.dom("[data-test-welcome]").doesNotExist();
+  });
+
+  test("a video dropped anywhere on the page loads", async function (assert) {
+    await visit("/");
+
+    const file = await theTestVideo();
+
+    await dragOverPage("dragenter", file);
+    assert.dom("[data-test-page-drop]").hasText("Drop to load the video");
+
+    await dragOverPage("drop", file);
+    await waitFor("[data-test-duration]");
+
+    assert.dom("[data-test-page-drop]").doesNotExist();
+    assert.dom("video").hasAria("label", "ten-seconds.webm");
+    assert.dom("[data-test-welcome]").doesNotExist();
+  });
+
+  test("a text file dropped on the page is ignored", async function (assert) {
+    await visit("/");
+
+    await dragOverPage("drop", new File(["notes"], "notes.txt", { type: "text/plain" }));
+
+    assert.dom("[data-test-welcome]").exists();
+    assert.dom("video").doesNotExist();
+  });
+
+  test("a file from disk plays here", async function (assert) {
+    await loadTheTestVideo();
+
+    assert.dom("video").hasAria("label", "ten-seconds.webm");
+    assert.dom("[data-test-now]").hasText("0:00.0");
+    assert.dom("[data-test-duration]").hasText("0:10.0");
+    assert.dom('[aria-label="Loop start"]').hasValue("0");
+    assert.dom('[aria-label="Loop end"]').hasValue("10");
+    assert.dom("[data-test-loop]").hasAria("pressed", "false");
+  });
+
+  test("number keys go back that many seconds", async function (assert) {
+    await loadTheTestVideo();
+    await seekTo(7, "0:07.0");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "3");
+    assert.dom("[data-test-now]").hasText("0:04.0");
+    assert.strictEqual(video().currentTime, 4);
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "0");
+    assert
+      .dom("[data-test-now]")
+      .hasText("0:00.0", "0 goes back 10 seconds, and stops at the start");
+  });
+
+  test("keys in the link field do not seek", async function (assert) {
+    await loadTheTestVideo();
+    await seekTo(7, "0:07.0");
+    await clickTab("YouTube link");
+
+    await triggerKeyEvent('input[name="link"]', "keydown", "3");
+    assert.dom("[data-test-now]").hasText("0:07.0");
+  });
+
+  test("the loop plays the part between the markers again and again", async function (assert) {
+    await loadTheTestVideo();
+
+    await seekTo(3, "0:03.0");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "[");
+    await seekTo(4, "0:04.0");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "]");
+
+    assert.dom('[aria-label="Loop start"]').hasValue("3");
+    assert.dom('[aria-label="Loop end"]').hasValue("4");
+
+    await click("[data-test-loop]");
+    assert.dom("[data-test-loop]").hasAria("pressed", "true");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "9");
+    assert.dom("[data-test-now]").hasText("0:03.0", "going back stops at the loop start");
+
+    await click("[data-test-play]");
+    await waitUntil(() => video().currentTime > 3.8, { timeout: 3000 });
+    await waitUntil(() => video().currentTime < 3.5, { timeout: 3000 });
+
+    assert.true(video().currentTime >= 3, "the video went back to the loop start");
+    assert.false(video().paused, "the video still plays");
+
+    await click("[data-test-play]");
+    assert.true(video().paused);
+  });
+
+  test("a paused video stays paused at the loop end", async function (assert) {
+    await loadTheTestVideo();
+
+    await seekTo(4, "0:04.0");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "]");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "L");
+    assert.dom("[data-test-loop]").hasAria("pressed", "true");
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    assert.true(video().paused);
+    assert.strictEqual(video().currentTime, 4);
+    assert.dom("[data-test-play]").hasText("Play");
+
+    await click("[data-test-play]");
+    await waitUntil(() => video().currentTime < 1, { timeout: 2000 });
+    assert.false(video().paused, "Play starts the loop from its start");
+
+    await click("[data-test-play]");
+  });
+
+  test("the whole video loops when the markers are at its ends", async function (assert) {
+    await loadTheTestVideo();
+    await click("[data-test-loop]");
+    await seekTo(9.5, "0:09.5");
+    await click("[data-test-play]");
+
+    await waitUntil(() => video().currentTime < 1 && !video().paused, { timeout: 3000 });
+    assert.false(video().paused, "the video plays again from the start");
+
+    await click("[data-test-play]");
+  });
+
+  test("a marker moves, and the number keys still work from its thumb", async function (assert) {
+    await loadTheTestVideo();
+    await seekTo(7, "0:07.0");
+
+    await fillIn('[aria-label="Loop end"]', "9.9");
+    assert.dom('[aria-label="Loop end"]').hasValue("9.9");
+    assert.dom('[aria-label="Loop end"]').hasAria("valuetext", "0:09.9");
+    assert.dom('[aria-label="Loop end"]').isFocused();
+
+    await triggerKeyEvent('[aria-label="Loop end"]', "keydown", "3");
+    assert.dom("[data-test-now]").hasText("0:04.0");
+
+    await click("[data-test-reset]");
+    assert.dom('[aria-label="Loop end"]').hasValue("10", "reset");
+  });
+
+  test("the speed goes down and up", async function (assert) {
+    await loadTheTestVideo();
+    assert.dom("[data-test-rate]").hasText("1×");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", ">");
+    assert.dom("[data-test-rate]").hasText("1.25×");
+    assert.strictEqual(video().playbackRate, 1.25);
+
+    await click("[data-test-slower]");
+    await click("[data-test-slower]");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "<");
+    assert.dom("[data-test-rate]").hasText("0.5×");
+    assert.strictEqual(video().playbackRate, 0.5);
+
+    await click("[data-test-slower]");
+    await click("[data-test-slower]");
+    assert.dom("[data-test-rate]").hasText("0.25×", "the speed stops at the slowest");
+    assert.dom("[data-test-slower]").hasAria("disabled", "");
+
+    video().playbackRate = 2;
+    await waitUntil(() => find("[data-test-rate]")?.textContent === "2×");
+    assert.dom("[data-test-faster]").hasAria("disabled", "", "a speed set elsewhere shows too");
+  });
+
+  test("the loop shows when it is on", async function (assert) {
+    await loadTheTestVideo();
+
+    assert.dom("[data-test-looping]").doesNotExist();
+    assert.dom(".replay__markers").doesNotHaveAttribute("data-looping");
+
+    await click("[data-test-loop]");
+
+    assert.dom("[data-test-loop]").hasAria("pressed", "true");
+    assert.dom("[data-test-loop]").hasAttribute("data-variant", "primary");
+    assert.dom("[data-test-looping]").hasText("Looping 0:00.0 to 0:10.0");
+    assert.dom(".replay__markers").hasAttribute("data-looping");
+  });
+
+  test("R and the button go to the loop start", async function (assert) {
+    await loadTheTestVideo();
+    await seekTo(3, "0:03.0");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "[");
+    await seekTo(8, "0:08.0");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "R");
+    assert.dom("[data-test-now]").hasText("0:03.0");
+    assert.strictEqual(video().currentTime, 3);
+
+    await seekTo(6, "0:06.0");
+    await click("[data-test-to-loop-start]");
+    assert.dom("[data-test-now]").hasText("0:03.0");
+  });
+
+  test("marker moves can be undone and redone", async function (assert) {
+    await loadTheTestVideo();
+    assert.dom("[data-test-undo]").hasAria("disabled", "");
+    assert.dom("[data-test-redo]").hasAria("disabled", "");
+
+    await seekTo(3, "0:03.0");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "[");
+    await fillIn('[aria-label="Loop end"]', "6");
+    await fillIn('[aria-label="Loop end"]', "5");
+    assert.dom('[aria-label="Loop start"]').hasValue("3");
+    assert.dom('[aria-label="Loop end"]').hasValue("5");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "Z", { ctrlKey: true });
+    assert.dom('[aria-label="Loop end"]').hasValue("6", "one drag is one step");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "Z", { metaKey: true });
+    assert.dom('[aria-label="Loop end"]').hasValue("10");
+
+    await click("[data-test-undo]");
+    assert.dom('[aria-label="Loop start"]').hasValue("0");
+    assert.dom("[data-test-undo]").hasAria("disabled", "");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "Z", { ctrlKey: true, shiftKey: true });
+    assert.dom('[aria-label="Loop start"]').hasValue("3");
+
+    await click("[data-test-redo]");
+    assert.dom('[aria-label="Loop end"]').hasValue("6");
+
+    await click("[data-test-reset]");
+    assert.dom("[data-test-redo]").hasAria("disabled", "", "a new move clears redo");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "Y", { ctrlKey: true });
+    assert.dom('[aria-label="Loop start"]').hasValue("0");
+
+    await click("[data-test-undo]");
+    assert.dom('[aria-label="Loop start"]').hasValue("3");
+    assert.dom('[aria-label="Loop end"]').hasValue("6");
+  });
+
+  test("Ctrl+Z in the link field is for the text", async function (assert) {
+    await loadTheTestVideo();
+    await seekTo(3, "0:03.0");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "[");
+    await clickTab("YouTube link");
+
+    await triggerKeyEvent('input[name="link"]', "keydown", "Z", { ctrlKey: true });
+    assert.dom('[aria-label="Loop start"]').hasValue("3");
+  });
+
+  test("a link that is not from YouTube shows an error", async function (assert) {
+    await visit("/");
+    await fillIn('input[name="link"]', "https://example.com/watch?v=dQw4w9WgXcQ");
+    await click('button[type="submit"]');
+
+    assert.dom('[role="alert"]').hasText("That is not a link to a YouTube video.");
+    assert.dom('input[name="link"]').hasAria("invalid", "true");
+    assert.dom("[data-test-youtube]").doesNotExist();
+  });
+});
