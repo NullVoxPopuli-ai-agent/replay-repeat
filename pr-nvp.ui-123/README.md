@@ -6,3 +6,5 @@ When a nvp.ui release has it:
 
 1. Change imports of `#pr-nvp.ui-123/file-drop.gts` to `nvp.ui`.
 2. Delete this folder and its `#pr-nvp.ui-123/*` entry in `package.json`.
+
+The copy wraps `FileDrop` from `ember-primitives` 0.64, which nvp.ui 0.11 does not have.
