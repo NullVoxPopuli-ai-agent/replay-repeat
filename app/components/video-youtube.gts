@@ -71,6 +71,11 @@ export class YouTubeVideo extends Component<Signature> {
           disablekb: 1,
           playsinline: 1,
           rel: 0,
+
+          /**
+           * The app has its own controls, also over the video in theatre mode and full screen.
+           */
+          controls: 0,
         },
         events: {
           onReady: (event) => this.args.onReady(new YouTubePlayer(event.target)),

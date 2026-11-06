@@ -538,6 +538,84 @@ module("Application | replay", function (hooks) {
     assert.dom("[data-test-welcome]").exists();
   });
 
+  test("a click on the video plays and pauses it", async function (assert) {
+    await loadTheTestVideo();
+
+    await click("[data-test-surface]");
+    await waitUntil(() => find("[data-test-play]")?.textContent?.trim() === "Pause", {
+      timeout: 2000,
+    });
+    assert.false(video().paused);
+
+    await click("[data-test-surface]");
+    await waitUntil(() => find("[data-test-play]")?.textContent?.trim() === "Play", {
+      timeout: 2000,
+    });
+    assert.true(video().paused);
+  });
+
+  test("the volume and mute change the video", async function (assert) {
+    await loadTheTestVideo();
+
+    await click("[data-test-mute]");
+    assert.true(video().muted);
+    assert.dom("[data-test-mute]").hasAria("label", "Unmute");
+    assert.dom("[data-test-volume]").hasValue("0", "the slider shows silence");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "M");
+    assert.false(video().muted, "M unmutes");
+
+    await fillIn("[data-test-volume]", "0.5");
+    assert.strictEqual(video().volume, 0.5);
+
+    await click("[data-test-mute]");
+    await fillIn("[data-test-volume]", "0.3");
+    assert.false(video().muted, "moving the volume unmutes");
+    assert.strictEqual(video().volume, 0.3);
+  });
+
+  test("theatre mode puts the controls over the video", async function (assert) {
+    await loadTheTestVideo();
+    assert.dom("[data-test-player]").doesNotHaveAttribute("data-overlay");
+
+    await click("[data-test-theatre]");
+
+    assert.dom("[data-test-replay]").hasAttribute("data-theatre");
+    assert.dom("[data-test-player]").hasAttribute("data-overlay");
+    assert.dom("[data-test-theatre]").hasAria("pressed", "true");
+    assert.dom("[data-test-controls]").hasClass("theme-dark");
+    assert.dom("[data-test-controls]").hasStyle({ position: "absolute" });
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "Escape");
+    assert.dom("[data-test-replay]").doesNotHaveAttribute("data-theatre", "Escape leaves");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "T");
+    assert.dom("[data-test-replay]").hasAttribute("data-theatre", "", "T enters");
+  });
+
+  test("over the video, the controls hide when nothing happens", async function (assert) {
+    await loadTheTestVideo();
+    await click("[data-test-theatre]");
+
+    await new Promise((resolve) => setTimeout(resolve, 2800));
+    assert.dom("[data-test-player]").doesNotHaveAttribute("data-idle", "paused, they stay");
+
+    await click("[data-test-play]");
+    await waitUntil(() => find("[data-test-player]")?.hasAttribute("data-idle"), { timeout: 4000 });
+    assert.dom("[data-test-controls]").hasStyle({ pointerEvents: "none" });
+
+    await triggerEvent("[data-test-player]", "pointermove");
+    assert.dom("[data-test-player]").doesNotHaveAttribute("data-idle", "a pointer move shows them");
+
+    await triggerEvent("[data-test-controls]", "pointerenter");
+    await new Promise((resolve) => setTimeout(resolve, 2800));
+    assert
+      .dom("[data-test-player]")
+      .doesNotHaveAttribute("data-idle", "on the controls, they stay");
+
+    await click("[data-test-play]");
+  });
+
   test("a link that is not from YouTube shows an error", async function (assert) {
     await visit("/");
     await fillIn('input[name="link"]', "https://example.com/watch?v=dQw4w9WgXcQ");

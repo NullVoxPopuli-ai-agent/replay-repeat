@@ -72,11 +72,26 @@ main {
   }
 }
 
+.replay__player {
+  display: grid;
+  gap: var(--gap-4);
+}
+
 .replay__stage {
+  position: relative;
   aspect-ratio: 16 / 9;
   background: #000;
   border-radius: var(--radius);
   overflow: hidden;
+}
+
+/**
+ * Over the video, so pointer moves and drags reach the app,
+ * also over YouTube's iframe, which is another page.
+ */
+.replay__surface {
+  position: absolute;
+  inset: 0;
 }
 
 .replay__media {
@@ -97,6 +112,72 @@ main {
   gap: var(--gap-2);
   padding: var(--padding-3);
   border-radius: var(--radius);
+}
+
+.replay__volume {
+  width: 6rem;
+  accent-color: var(--color-primary);
+}
+
+/**
+ * Theatre mode: the player spans the width of the window, on black.
+ * Body clips the width of the scrollbar that `100vw` includes.
+ */
+body:has(.replay[data-theatre]) {
+  overflow-x: clip;
+}
+
+.replay[data-theatre] .replay__player {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  background: #000;
+}
+
+.replay__player:fullscreen {
+  display: grid;
+  place-content: center;
+  background: #000;
+}
+
+/**
+ * Theatre mode and full screen: the video fills the height it can,
+ * and the controls float over its bottom.
+ */
+.replay__player[data-overlay] {
+  position: relative;
+  gap: 0;
+
+  .replay__stage {
+    width: min(100vw, calc(100dvh * 16 / 9));
+    margin-inline: auto;
+    border-radius: 0;
+  }
+
+  /* One row, so the controls cover less of the video */
+  .replay__playback {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .replay__controls {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    padding: var(--padding-4) calc(var(--padding-4) * 2);
+    border-radius: 0;
+    background: linear-gradient(transparent, rgb(0 0 0 / 85%) 35%);
+    transition: opacity var(--fade-duration);
+  }
+}
+
+.replay__player[data-idle] {
+  cursor: none;
+
+  .replay__controls {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 .replay__status {

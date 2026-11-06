@@ -13,6 +13,9 @@ Load a YouTube link or a video file from your disk. You can drop a video file an
 | `R`                | go to the loop start             |
 | `K`                | play or pause                    |
 | `<` and `>`        | slower or faster                 |
+| `M`                | mute or unmute                   |
+| `T`                | theatre mode on or off           |
+| `F`                | full screen on or off            |
 | `Ctrl`+`Z`         | undo a marker move               |
 | `Ctrl`+`Shift`+`Z` | redo a marker move               |
 

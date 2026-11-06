@@ -33,6 +33,18 @@ export const Shortcuts: TOC<object> = <template>
         <dd>Slower or faster</dd>
       </div>
       <div>
+        <dt><kbd>M</kbd></dt>
+        <dd>Mute or unmute</dd>
+      </div>
+      <div>
+        <dt><kbd>T</kbd></dt>
+        <dd>Theatre mode on or off (<kbd>Esc</kbd> leaves)</dd>
+      </div>
+      <div>
+        <dt><kbd>F</kbd></dt>
+        <dd>Full screen on or off, or double-click the video</dd>
+      </div>
+      <div>
         <dt><kbd>Ctrl</kbd> or <kbd>⌘</kbd> + <kbd>Z</kbd></dt>
         <dd>Undo a marker move</dd>
       </div>

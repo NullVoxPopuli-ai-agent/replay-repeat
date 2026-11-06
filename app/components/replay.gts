@@ -1,5 +1,6 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { on } from "@ember/modifier";
 import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
 
@@ -10,13 +11,18 @@ import { Button, RangeSlider, ToggleButton } from "nvp.ui";
 import { History } from "#utils/history.ts";
 import { formatSeconds, PARAMS, secondsOf } from "#utils/params.ts";
 import { formatTime } from "#utils/time.ts";
+import Fullscreen from "~icons/mdi/fullscreen";
+import FullscreenExit from "~icons/mdi/fullscreen-exit";
 import Minus from "~icons/mdi/minus";
 import Plus from "~icons/mdi/plus";
 import Redo from "~icons/mdi/redo";
 import Repeat from "~icons/mdi/repeat";
 import RepeatOff from "~icons/mdi/repeat-off";
 import SkipPrevious from "~icons/mdi/skip-previous";
+import TheatreIcon from "~icons/mdi/television";
 import Undo from "~icons/mdi/undo";
+import VolumeHigh from "~icons/mdi/volume-high";
+import VolumeOff from "~icons/mdi/volume-off";
 
 import { Shortcuts } from "./shortcuts.gts";
 import { VideoFile } from "./video-file.gts";
@@ -50,6 +56,12 @@ interface Markers {
 const sameMarkers = (a: Markers, b: Markers) => a.start === b.start && a.end === b.end;
 
 const formatRate = (rate: number) => `${rate}×`;
+
+/**
+ * In theatre mode and full screen, the controls over the video
+ * fade out after this long without a pointer move or a key press.
+ */
+const IDLE_MS = 2500;
 
 /**
  * After a seek, a player can report the old time for a few frames.
@@ -87,6 +99,25 @@ export class Replay extends Component<Signature> {
   @tracked now = 0;
   @tracked duration = 0;
   @tracked paused = true;
+  @tracked volume = 1;
+  @tracked muted = false;
+
+  /**
+   * The player spans the window, with the controls over the video.
+   */
+  @tracked theatre = false;
+
+  /**
+   * Set from `fullscreenchange`, because the browser can leave full screen
+   * on its own, for example on Escape.
+   */
+  @tracked fullscreen = false;
+
+  /**
+   * The controls over the video are hidden, and so is the cursor.
+   */
+  @tracked idle = false;
+  @tracked overControls = false;
 
   /**
    * The markers while a thumb moves. The URL gets them once, when the move ends,
@@ -97,6 +128,15 @@ export class Replay extends Component<Signature> {
   markers = new History<Markers>({ start: 0, end: undefined }, sameMarkers);
 
   #seekedAt = 0;
+  #activeAt = 0;
+  #playerElement: HTMLElement | undefined;
+
+  /**
+   * The controls go over the video, and hide when nothing happens.
+   */
+  get overlay() {
+    return this.theatre || this.fullscreen;
+  }
 
   /**
    * The speed that the player has from this app, and when it got it.
@@ -155,6 +195,8 @@ export class Replay extends Component<Signature> {
   ready = (player: Player) => {
     this.player = player;
     this.duration = player.duration;
+    this.volume = player.volume;
+    this.muted = player.muted;
   };
 
   seek(seconds: number) {
@@ -187,6 +229,66 @@ export class Replay extends Component<Signature> {
 
   toLoopStart = () => {
     this.seek(this.loopStart);
+  };
+
+  toggleMute = () => {
+    this.muted = !this.muted;
+    this.player?.setMuted(this.muted);
+  };
+
+  /**
+   * Moving the volume up from silence also unmutes.
+   */
+  changeVolume = (event: Event) => {
+    const volume = Number((event.currentTarget as HTMLInputElement).value);
+
+    this.volume = volume;
+    this.player?.setVolume(volume);
+
+    if (this.muted && volume > 0) this.toggleMute();
+  };
+
+  /**
+   * Theatre mode sizes the player to the window, so it scrolls to the top of it.
+   */
+  toggleTheatre = () => {
+    this.theatre = !this.theatre;
+    this.activity();
+
+    if (this.theatre) {
+      requestAnimationFrame(() => this.#playerElement?.scrollIntoView({ block: "start" }));
+    }
+  };
+
+  /**
+   * The player and its controls go full screen together.
+   * A browser can refuse, for example without a click or a key press first.
+   */
+  toggleFullscreen = () => {
+    this.activity();
+
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+
+      return;
+    }
+
+    void this.#playerElement?.requestFullscreen().catch(() => {});
+  };
+
+  activity = () => {
+    this.#activeAt = performance.now();
+
+    if (this.idle) this.idle = false;
+  };
+
+  enterControls = () => {
+    this.overControls = true;
+  };
+
+  leaveControls = () => {
+    this.overControls = false;
+    this.activity();
   };
 
   setRate(rate: number) {
@@ -286,6 +388,7 @@ export class Replay extends Component<Signature> {
     }
 
     this.syncRate(player);
+    this.syncIdle();
 
     if (!this.looping || performance.now() - this.#seekedAt < SEEK_SETTLE_MS) return;
 
@@ -335,7 +438,22 @@ export class Replay extends Component<Signature> {
     if (player.rate !== this.#appliedRate) this.writeRate(player.rate);
   }
 
+  /**
+   * The controls stay while the video is paused, or while the pointer is on them.
+   */
+  syncIdle() {
+    const idle =
+      this.overlay &&
+      !this.paused &&
+      !this.overControls &&
+      performance.now() - this.#activeAt > IDLE_MS;
+
+    if (idle !== this.idle) this.idle = idle;
+  }
+
   onKey = (event: KeyboardEvent) => {
+    this.activity();
+
     if (isTyping(event.target)) return;
     if (event.altKey) return;
 
@@ -384,6 +502,30 @@ export class Replay extends Component<Signature> {
         this.faster();
 
         break;
+      case "m":
+      case "M":
+        this.toggleMute();
+
+        break;
+      case "t":
+      case "T":
+        this.toggleTheatre();
+
+        break;
+      case "f":
+      case "F":
+        this.toggleFullscreen();
+
+        break;
+      case "Escape":
+        /**
+         * In full screen, the browser handles Escape itself.
+         */
+        if (!this.theatre || this.fullscreen) return;
+
+        this.theatre = false;
+
+        break;
       default:
         return;
     }
@@ -414,6 +556,7 @@ export class Replay extends Component<Signature> {
    * - reads the time of the player on each frame, for the playhead and the loop
    * - listens for shortcut keys on the whole page
    * - takes the focus back from the YouTube iframe, which keeps key presses for itself
+   * - follows full screen, which the browser can also leave on its own
    */
   connect = modifier((element: HTMLElement) => {
     const loop = () => {
@@ -433,127 +576,227 @@ export class Replay extends Component<Signature> {
       });
     };
 
+    const onFullscreen = () => {
+      this.fullscreen =
+        Boolean(this.#playerElement) && document.fullscreenElement === this.#playerElement;
+      this.activity();
+    };
+
     document.addEventListener("keydown", this.onKey);
+    document.addEventListener("fullscreenchange", onFullscreen);
     window.addEventListener("blur", onBlur);
 
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener("keydown", this.onKey);
+      document.removeEventListener("fullscreenchange", onFullscreen);
       window.removeEventListener("blur", onBlur);
     };
   });
 
+  /**
+   * The element that goes full screen: the video and the controls.
+   */
+  playerElement = modifier((element: HTMLElement) => {
+    this.#playerElement = element;
+
+    return () => {
+      this.#playerElement = undefined;
+    };
+  });
+
   <template>
-    <section class="replay" tabindex="-1" aria-label="Player" data-test-replay {{this.connect}}>
-      <div class="replay__stage">
-        {{#if this.file}}
-          <VideoFile @file={{this.file}} @onReady={{this.ready}} />
-        {{else if this.youTubeId}}
-          <YouTubeVideo @id={{this.youTubeId}} @onReady={{this.ready}} />
+    <section
+      class="replay"
+      tabindex="-1"
+      aria-label="Player"
+      data-theatre={{this.theatre}}
+      data-test-replay
+      {{this.connect}}
+    >
+      <div
+        class="replay__player"
+        data-overlay={{this.overlay}}
+        data-idle={{this.idle}}
+        data-test-player
+        {{this.playerElement}}
+        {{on "pointermove" this.activity}}
+        {{on "pointerdown" this.activity}}
+      >
+        <div class="replay__stage">
+          {{#if this.file}}
+            <VideoFile @file={{this.file}} @onReady={{this.ready}} />
+          {{else if this.youTubeId}}
+            <YouTubeVideo @id={{this.youTubeId}} @onReady={{this.ready}} />
+          {{/if}}
+
+          {{#if this.player}}
+            {{! Over the video, so that pointer moves reach the app, also over YouTube's iframe.
+                The buttons do the same for the keyboard. }}
+            {{! template-lint-disable no-invalid-interactive }}
+            <div
+              class="replay__surface"
+              data-test-surface
+              {{on "click" this.togglePlay}}
+              {{on "dblclick" this.toggleFullscreen}}
+            ></div>
+          {{/if}}
+        </div>
+
+        {{#if this.player}}
+          <div
+            class="replay__controls surface {{if this.overlay 'theme-dark'}}"
+            data-test-controls
+            {{on "pointerenter" this.enterControls}}
+            {{on "pointerleave" this.leaveControls}}
+          >
+            <div class="replay__status">
+              <span class="replay__time" data-test-time>
+                <span data-test-now>{{formatTime this.now}}</span>
+                /
+                <span data-test-duration>{{formatTime this.duration}}</span>
+              </span>
+
+              {{#if this.looping}}
+                <span class="replay__looping" data-test-looping>
+                  <Repeat aria-hidden="true" />
+                  Looping
+                  {{formatTime this.loopStart}}
+                  to
+                  {{formatTime this.loopEnd}}
+                </span>
+              {{/if}}
+            </div>
+
+            <RangeSlider
+              class="replay__markers"
+              data-looping={{this.looping}}
+              @label="Loop markers"
+              @startLabel="Loop start"
+              @endLabel="Loop end"
+              @max={{this.duration}}
+              @step={{STEP}}
+              @start={{this.loopStart}}
+              @end={{this.loopEnd}}
+              @onChange={{this.setMarkers}}
+              @onCommit={{this.recordMarkers}}
+              @formatValue={{formatTime}}
+              as |track|
+            >
+              <span
+                class="replay__playhead"
+                style={{playheadStyle (track.position this.now)}}
+              ></span>
+            </RangeSlider>
+
+            <div class="replay__buttons">
+              <div class="replay__playback">
+                <div role="group" aria-label="Playback">
+                  <Button @variant="primary" @onClick={{this.togglePlay}} data-test-play>
+                    {{if this.paused "Play" "Pause"}}
+                  </Button>
+                  <ToggleButton
+                    @pressed={{this.looping}}
+                    @variant={{if this.looping "primary"}}
+                    @onClick={{this.toggleLoop}}
+                    data-test-loop
+                  >
+                    {{#if this.looping}}
+                      <Repeat aria-hidden="true" />
+                    {{else}}
+                      <RepeatOff aria-hidden="true" />
+                    {{/if}}
+                    Loop
+                  </ToggleButton>
+                </div>
+
+                <div role="group" aria-label="Speed" class="replay__speed">
+                  <Button
+                    aria-label="Slower"
+                    @disabled={{unless this.canSlowDown "Already the slowest speed"}}
+                    @onClick={{this.slower}}
+                    data-test-slower
+                  ><Minus aria-hidden="true" /></Button>
+                  <span class="replay__rate" data-test-rate>{{formatRate this.rate}}</span>
+                  <Button
+                    aria-label="Faster"
+                    @disabled={{unless this.canSpeedUp "Already the fastest speed"}}
+                    @onClick={{this.faster}}
+                    data-test-faster
+                  ><Plus aria-hidden="true" /></Button>
+                </div>
+
+                <Button @onClick={{this.toLoopStart}} data-test-to-loop-start>
+                  <:start><SkipPrevious aria-hidden="true" /></:start>
+                  <:default>Go to loop start</:default>
+                </Button>
+              </div>
+
+              <div role="group" aria-label="Loop markers" class="replay__marker-buttons">
+                <Button @onClick={{this.markStart}}>Set start here</Button>
+                <Button @onClick={{this.markEnd}}>Set end here</Button>
+                <Button
+                  aria-label="Undo"
+                  @disabled={{unless this.markers.canUndo "No marker move to undo"}}
+                  @onClick={{this.undo}}
+                  data-test-undo
+                ><Undo aria-hidden="true" /></Button>
+                <Button
+                  aria-label="Redo"
+                  @disabled={{unless this.markers.canRedo "No marker move to redo"}}
+                  @onClick={{this.redo}}
+                  data-test-redo
+                ><Redo aria-hidden="true" /></Button>
+                <Button @variant="bare" @onClick={{this.resetMarkers}} data-test-reset>Reset markers</Button>
+              </div>
+
+              <div role="group" aria-label="View" class="replay__view">
+                <Button
+                  aria-label={{if this.muted "Unmute" "Mute"}}
+                  @onClick={{this.toggleMute}}
+                  data-test-mute
+                >
+                  {{#if this.muted}}
+                    <VolumeOff aria-hidden="true" />
+                  {{else}}
+                    <VolumeHigh aria-hidden="true" />
+                  {{/if}}
+                </Button>
+                <input
+                  class="replay__volume"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={{if this.muted 0 this.volume}}
+                  aria-label="Volume"
+                  data-test-volume
+                  {{on "input" this.changeVolume}}
+                />
+                <ToggleButton
+                  @pressed={{this.theatre}}
+                  @onClick={{this.toggleTheatre}}
+                  aria-label="Theatre mode"
+                  data-test-theatre
+                ><TheatreIcon aria-hidden="true" /></ToggleButton>
+                <Button
+                  aria-label={{if this.fullscreen "Exit full screen" "Full screen"}}
+                  @onClick={{this.toggleFullscreen}}
+                  data-test-fullscreen
+                >
+                  {{#if this.fullscreen}}
+                    <FullscreenExit aria-hidden="true" />
+                  {{else}}
+                    <Fullscreen aria-hidden="true" />
+                  {{/if}}
+                </Button>
+              </div>
+            </div>
+          </div>
         {{/if}}
       </div>
 
       {{#if this.player}}
-        <div class="replay__controls surface">
-          <div class="replay__status">
-            <span class="replay__time" data-test-time>
-              <span data-test-now>{{formatTime this.now}}</span>
-              /
-              <span data-test-duration>{{formatTime this.duration}}</span>
-            </span>
-
-            {{#if this.looping}}
-              <span class="replay__looping" data-test-looping>
-                <Repeat aria-hidden="true" />
-                Looping
-                {{formatTime this.loopStart}}
-                to
-                {{formatTime this.loopEnd}}
-              </span>
-            {{/if}}
-          </div>
-
-          <RangeSlider
-            class="replay__markers"
-            data-looping={{this.looping}}
-            @label="Loop markers"
-            @startLabel="Loop start"
-            @endLabel="Loop end"
-            @max={{this.duration}}
-            @step={{STEP}}
-            @start={{this.loopStart}}
-            @end={{this.loopEnd}}
-            @onChange={{this.setMarkers}}
-            @onCommit={{this.recordMarkers}}
-            @formatValue={{formatTime}}
-            as |track|
-          >
-            <span class="replay__playhead" style={{playheadStyle (track.position this.now)}}></span>
-          </RangeSlider>
-
-          <div class="replay__buttons">
-            <div class="replay__playback">
-              <div role="group" aria-label="Playback">
-                <Button @variant="primary" @onClick={{this.togglePlay}} data-test-play>
-                  {{if this.paused "Play" "Pause"}}
-                </Button>
-                <ToggleButton
-                  @pressed={{this.looping}}
-                  @variant={{if this.looping "primary"}}
-                  @onClick={{this.toggleLoop}}
-                  data-test-loop
-                >
-                  {{#if this.looping}}
-                    <Repeat aria-hidden="true" />
-                  {{else}}
-                    <RepeatOff aria-hidden="true" />
-                  {{/if}}
-                  Loop
-                </ToggleButton>
-              </div>
-
-              <div role="group" aria-label="Speed" class="replay__speed">
-                <Button
-                  aria-label="Slower"
-                  @disabled={{unless this.canSlowDown "Already the slowest speed"}}
-                  @onClick={{this.slower}}
-                  data-test-slower
-                ><Minus aria-hidden="true" /></Button>
-                <span class="replay__rate" data-test-rate>{{formatRate this.rate}}</span>
-                <Button
-                  aria-label="Faster"
-                  @disabled={{unless this.canSpeedUp "Already the fastest speed"}}
-                  @onClick={{this.faster}}
-                  data-test-faster
-                ><Plus aria-hidden="true" /></Button>
-              </div>
-
-              <Button @onClick={{this.toLoopStart}} data-test-to-loop-start>
-                <:start><SkipPrevious aria-hidden="true" /></:start>
-                <:default>Go to loop start</:default>
-              </Button>
-            </div>
-
-            <div role="group" aria-label="Loop markers" class="replay__marker-buttons">
-              <Button @onClick={{this.markStart}}>Set start here</Button>
-              <Button @onClick={{this.markEnd}}>Set end here</Button>
-              <Button
-                aria-label="Undo"
-                @disabled={{unless this.markers.canUndo "No marker move to undo"}}
-                @onClick={{this.undo}}
-                data-test-undo
-              ><Undo aria-hidden="true" /></Button>
-              <Button
-                aria-label="Redo"
-                @disabled={{unless this.markers.canRedo "No marker move to redo"}}
-                @onClick={{this.redo}}
-                data-test-redo
-              ><Redo aria-hidden="true" /></Button>
-              <Button @variant="bare" @onClick={{this.resetMarkers}} data-test-reset>Reset markers</Button>
-            </div>
-          </div>
-        </div>
-
         <Shortcuts />
       {{/if}}
     </section>
