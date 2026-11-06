@@ -1,0 +1,150 @@
+.layout {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--padding-4);
+}
+
+.layout__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-4);
+  margin-block-end: var(--gap-4);
+
+  h1 {
+    margin: 0;
+  }
+}
+
+main {
+  display: grid;
+  gap: var(--gap-4);
+}
+
+.source__form {
+  display: flex;
+  align-items: end;
+  gap: var(--gap-2);
+}
+
+.source__field {
+  display: grid;
+  flex: 1;
+  gap: var(--gap);
+
+  input {
+    padding: var(--padding-1) var(--padding-2);
+    font: inherit;
+    line-height: var(--line-height);
+    color: inherit;
+    background: var(--color-page-background);
+    border: var(--border-width) var(--border-style)
+      color-mix(in oklab, var(--color-text) 35%, transparent);
+    border-radius: var(--radius);
+
+    &[aria-invalid="true"] {
+      border-color: var(--color-danger);
+    }
+  }
+}
+
+.replay__error {
+  color: var(--color-danger);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.replay {
+  display: grid;
+  gap: var(--gap-4);
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.replay__stage {
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.replay__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+}
+
+.replay__controls {
+  display: grid;
+  gap: var(--gap-2);
+  padding: var(--padding-3);
+  border-radius: var(--radius);
+}
+
+.replay__time {
+  font-variant-numeric: tabular-nums;
+}
+
+.replay__playhead {
+  position: absolute;
+  inset-block: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--color-text);
+  pointer-events: none;
+}
+
+.replay__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-2);
+}
+
+.shortcuts {
+  h2 {
+    margin: 0 0 var(--gap-2);
+    font-size: 1rem;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--gap) var(--gap-4);
+    margin: 0;
+
+    div {
+      display: contents;
+    }
+
+    dd {
+      margin: 0;
+    }
+  }
+
+  p {
+    margin: var(--gap-2) 0 0;
+  }
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 var(--padding-1);
+  font-family: ui-monospace, monospace;
+  text-align: center;
+  border: var(--border-width) var(--border-style)
+    color-mix(in oklab, var(--color-text) 35%, transparent);
+  border-bottom-width: 2px;
+  border-radius: var(--radius);
+}

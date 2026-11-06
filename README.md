@@ -1,6 +1,27 @@
 # replay-repeat
 
-An Ember application created with `ember.nvp`.
+Replay part of a video until you know it.
+Load a YouTube link or a video file from your disk.
+
+| key         | action                           |
+| :---------- | :------------------------------- |
+| `1` to `9`  | go back that many seconds        |
+| `0`         | go back 10 seconds               |
+| `[` and `]` | set the loop start or end to now |
+| `L`         | loop on or off                   |
+| `K`         | play or pause                    |
+
+Drag the two loop markers under the video to pick the part that loops.
+When the loop is on, going back stops at the loop start.
+
+There is no server:
+
+- A video file stays on your disk, and the browser plays it from there.
+- For YouTube links, the app loads the YouTube IFrame Player API.
+
+This is an Ember app, created with [ember.nvp](https://github.com/NullVoxPopuli/ember.nvp), with [nvp.ui](https://github.com/NullVoxPopuli/nvp.ui) for the UI.
+Each `pr-nvp.ui-<number>/` folder holds a component from an open nvp.ui pull request.
+Its README tells how to remove the folder after a release.
 
 ## Getting Started
 

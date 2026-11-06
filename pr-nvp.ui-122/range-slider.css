@@ -1,0 +1,105 @@
+.nvp__range-slider {
+  --range-slider-track-height: 0.5rem;
+  --range-slider-thumb-width: 0.75rem;
+  --range-slider-thumb-height: 1.75rem;
+  --range-slider-track-color: color-mix(in oklab, var(--color-text) 15%, transparent);
+  --range-slider-range-color: color-mix(in oklab, var(--color-primary) 60%, transparent);
+  --range-slider-thumb-color: var(--color-primary);
+  --range-slider-thumb-border-color: color-mix(in oklab, var(--color-text) 60%, transparent);
+
+  /**
+   * Room for the value labels above the thumbs,
+   * and for the focus ring on every side.
+   */
+  padding: calc(var(--line-height) + var(--padding-1)) calc(var(--range-slider-thumb-width) / 2)
+    var(--padding-1);
+  touch-action: none;
+  user-select: none;
+}
+
+.nvp__range-slider__track {
+  position: relative;
+  height: var(--range-slider-thumb-height);
+  cursor: pointer;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    height: var(--range-slider-track-height);
+    transform: translateY(-50%);
+    border-radius: var(--range-slider-track-height);
+    background: var(--range-slider-track-color);
+  }
+}
+
+.nvp__range-slider__range {
+  position: absolute;
+  top: 50%;
+  left: var(--range-slider-start);
+  width: calc(var(--range-slider-end) - var(--range-slider-start));
+  height: var(--range-slider-track-height);
+  transform: translateY(-50%);
+  background: var(--range-slider-range-color);
+  cursor: grab;
+}
+
+.nvp__range-slider__thumb {
+  position: absolute;
+  top: 0;
+  width: var(--range-slider-thumb-width);
+  height: var(--range-slider-thumb-height);
+  transform: translateX(-50%);
+  border-radius: var(--radius);
+  border: var(--border-width) var(--border-style) var(--range-slider-thumb-border-color);
+  background: var(--range-slider-thumb-color);
+  cursor: grab;
+  z-index: 1;
+
+  &[data-part="start"] {
+    left: var(--range-slider-start);
+  }
+
+  &[data-part="end"] {
+    left: var(--range-slider-end);
+  }
+
+  &:hover {
+    filter: brightness(1.15);
+  }
+}
+
+.nvp__range-slider__value {
+  position: absolute;
+  bottom: calc(100% + var(--padding-1));
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  line-height: var(--line-height);
+  white-space: nowrap;
+  pointer-events: none;
+
+  /**
+   * The labels point away from each other,
+   * so that they stay readable when the thumbs are close.
+   */
+  [data-part="start"] > & {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  [data-part="end"] > & {
+    left: 0;
+    transform: none;
+  }
+}
+
+.nvp__range-slider[data-dragging] {
+  .nvp__range-slider__track,
+  .nvp__range-slider__range,
+  .nvp__range-slider__thumb {
+    cursor: grabbing;
+  }
+}

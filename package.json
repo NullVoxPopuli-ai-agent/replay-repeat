@@ -13,7 +13,9 @@
     "#components/*": "./app/components/*",
     "#services/*": "./app/services/*",
     "#test-helpers/*": "./tests/helpers/*",
-    "#utils/*": "./app/utils/*"
+    "#utils/*": "./app/utils/*",
+    "#pr-nvp.ui-122/*": "./pr-nvp.ui-122/*",
+    "#pr-nvp.ui-123/*": "./pr-nvp.ui-123/*"
   },
   "exports": {
     "./tests/*": "./tests/*",
@@ -40,7 +42,10 @@
     "@embroider/router": "^3.0.6",
     "@glimmer/component": "^2.2.1",
     "decorator-transforms": "^2.4.0",
-    "ember-source": "~7.4.0"
+    "ember-modifier": "^4.3.0",
+    "ember-source": "~7.4.0",
+    "nvp.ui": "^0.11.0",
+    "reactiveweb": "^1.9.4"
   },
   "devDependencies": {
     "@babel/core": "^7.29.13",
@@ -57,6 +62,7 @@
     "@nullvoxpopuli/eslint-configs": "^7.1.0",
     "@rollup/plugin-babel": "^7.1.0",
     "@types/qunit": "^2.19.14",
+    "@types/youtube": "^0.3.0",
     "@typescript/native": "npm:typescript@^7.1.0-dev.20261105.1",
     "babel-plugin-debug-macros": "^2.0.0",
     "babel-plugin-ember-template-compilation": "^4.0.1",

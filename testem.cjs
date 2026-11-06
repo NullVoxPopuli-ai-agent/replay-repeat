@@ -17,6 +17,7 @@ if (typeof module !== "undefined") {
           "--disable-dev-shm-usage",
           "--disable-software-rasterizer",
           "--mute-audio",
+          "--autoplay-policy=no-user-gesture-required",
           "--remote-debugging-port=0",
           "--window-size=1440,900",
         ].filter(Boolean),
