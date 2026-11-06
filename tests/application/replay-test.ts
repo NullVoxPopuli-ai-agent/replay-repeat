@@ -53,6 +53,18 @@ async function loadTheTestVideo() {
 module("Application | replay", function (hooks) {
   setupApplicationTest(hooks);
 
+  test("with no video, a welcome explains the privacy", async function (assert) {
+    await visit("/");
+
+    assert.dom("[data-test-welcome] h2").hasText("Pick a video to start");
+    assert.dom("[data-test-welcome]").includesText("asks for no permissions");
+    assert.dom("[data-test-welcome] svg").hasAria("hidden", "true");
+
+    await loadTheTestVideo();
+
+    assert.dom("[data-test-welcome]").doesNotExist();
+  });
+
   test("a file from disk plays here", async function (assert) {
     await loadTheTestVideo();
 

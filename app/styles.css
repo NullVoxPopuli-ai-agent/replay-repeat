@@ -191,3 +191,76 @@ kbd {
   border-bottom-width: 2px;
   border-radius: var(--radius);
 }
+
+.welcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-4);
+  padding: var(--padding-4);
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+
+  h2 {
+    margin: 0 0 var(--gap);
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    margin: var(--gap-4) 0 var(--gap);
+    font-size: 1rem;
+  }
+
+  p,
+  ul {
+    margin: 0;
+  }
+
+  ul {
+    display: grid;
+    gap: var(--gap);
+    margin-block-start: var(--gap-2);
+    padding-inline-start: 1.25rem;
+  }
+}
+
+.welcome__art {
+  flex: 0 0 8rem;
+  width: 8rem;
+}
+
+.welcome__text {
+  flex: 1 1 24rem;
+  max-width: 40rem;
+}
+
+.welcome__tv {
+  fill: var(--color-primary);
+}
+
+.welcome__screen {
+  fill: var(--color-page-background);
+}
+
+.welcome__face,
+.welcome__fill {
+  fill: var(--color-text);
+}
+
+.welcome__cheek {
+  fill: var(--color-danger);
+  opacity: 0.5;
+}
+
+.welcome__smile,
+.welcome__line {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.welcome__line {
+  stroke: var(--color-primary);
+}

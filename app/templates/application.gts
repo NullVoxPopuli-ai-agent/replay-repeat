@@ -9,6 +9,7 @@ import { ThemeToggle } from "nvp.ui/theme-toggle";
 
 import { Replay } from "#components/replay.gts";
 import { SourcePicker } from "#components/source-picker.gts";
+import { Welcome } from "#components/welcome.gts";
 
 import type { Source } from "#utils/source.ts";
 
@@ -40,6 +41,8 @@ export default class Application extends Component {
 
           {{#each this.sources key="@identity" as |source|}}
             <Replay @source={{source}} />
+          {{else}}
+            <Welcome />
           {{/each}}
         </main>
       </div>
