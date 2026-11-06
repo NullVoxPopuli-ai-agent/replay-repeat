@@ -5,7 +5,7 @@ import { tracked } from "@glimmer/tracking";
 import { service } from "@ember/service";
 
 import { DocumentFileDrop } from "ember-primitives/components/file-drop";
-import { Shell } from "nvp.ui";
+import { ExternalLink, Shell } from "nvp.ui";
 import { ThemeToggle } from "nvp.ui/theme-toggle";
 
 import { Replay } from "#components/replay.gts";
@@ -74,7 +74,12 @@ export default class Application extends Component {
       <div class="layout">
         <header class="layout__header">
           <h1>Replay, repeat</h1>
-          <ThemeToggle />
+          <div class="layout__header-end">
+            <ExternalLink href="https://github.com/NullVoxPopuli/replay-repeat" data-test-github>
+              GitHub
+            </ExternalLink>
+            <ThemeToggle />
+          </div>
         </header>
 
         <main>
