@@ -15,7 +15,8 @@
     "#test-helpers/*": "./tests/helpers/*",
     "#utils/*": "./app/utils/*",
     "#pr-nvp.ui-122/*": "./pr-nvp.ui-122/*",
-    "#pr-nvp.ui-123/*": "./pr-nvp.ui-123/*"
+    "#pr-nvp.ui-123/*": "./pr-nvp.ui-123/*",
+    "#pr-nvp.ui-125/*": "./pr-nvp.ui-125/*"
   },
   "exports": {
     "./tests/*": "./tests/*",

@@ -1,4 +1,5 @@
 import "#app/styles.css";
+import "#pr-nvp.ui-125/dark-theme.css";
 
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
