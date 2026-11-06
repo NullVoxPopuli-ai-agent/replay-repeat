@@ -118,6 +118,31 @@ module("Application | replay", function (hooks) {
     assert.dom("[data-test-welcome]").doesNotExist();
   });
 
+  test("during a file drag, the hint is on top of the player", async function (assert) {
+    await loadTheTestVideo();
+
+    const file = await theTestVideo();
+
+    await dragOverPage("dragenter", file);
+
+    /**
+     * A YouTube player is an iframe, which would take the drag for itself.
+     * The hint covers it, so the drop stays on this page.
+     */
+    const player = find("video");
+
+    if (!player) throw new Error("No video is rendered");
+
+    player.scrollIntoView({ block: "center" });
+
+    const box = player.getBoundingClientRect();
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+
+    assert.dom(top).hasAttribute("data-test-page-drop");
+
+    await dragOverPage("drop", file);
+  });
+
   test("a text file dropped on the page is ignored", async function (assert) {
     await visit("/");
 

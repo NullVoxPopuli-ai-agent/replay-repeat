@@ -236,8 +236,9 @@ kbd {
 }
 
 /**
- * Shows while a file is over the page.
- * It takes no pointer events, so the drop reaches the page.
+ * Shows while a file is over the page, and catches the drag.
+ * Without it, a drag over the YouTube player goes into YouTube's iframe,
+ * which is another page, and the app never sees the drop.
  */
 .page-drop {
   position: fixed;
@@ -249,7 +250,6 @@ kbd {
   border: 3px dashed var(--color-primary);
   border-radius: var(--radius);
   background: color-mix(in oklab, var(--color-page-background) 85%, transparent);
-  pointer-events: none;
 }
 
 .welcome {
