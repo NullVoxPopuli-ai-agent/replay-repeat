@@ -355,6 +355,26 @@ module("Application | replay", function (hooks) {
     assert.deepEqual(queryParams(), {}, "the defaults leave the URL again");
   });
 
+  test("a burst of changes is one transition", async function (assert) {
+    await loadTheTestVideo();
+
+    const router = this.owner.lookup("service:router");
+
+    router.on("routeDidChange", () => assert.step("transition"));
+
+    /**
+     * No `await` between the keys, so all three land before the next frame.
+     */
+    for (const key of ["L", ">", ">"]) {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    }
+
+    await settled();
+
+    assert.verifySteps(["transition"]);
+    assert.deepEqual(queryParams(), { loop: "1", speed: "1.5" });
+  });
+
   test("a drag of a marker is one change of the URL", async function (assert) {
     await loadTheTestVideo();
 

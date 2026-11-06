@@ -13,7 +13,7 @@ export type QueryParams = Record<string, string | null>;
  * Query params as app state, with no controllers.
  *
  * - Reads come from `router.currentRoute.queryParams`.
- * - Writes in the same frame go out as one `transitionTo`.
+ * - A burst of writes goes out as one `transitionTo`.
  *   Transitions in flight cancel each other, so one at a time keeps the URL right.
  * - The application route declares the params, so the URL gets them,
  *   and a transition keeps the params that it does not name.
@@ -35,24 +35,33 @@ export default class UrlStateService extends Service {
     return typeof value === "string" ? value : undefined;
   }
 
+  /**
+   * Each write moves the transition to the next frame,
+   * so a burst of writes is one transition after the last one.
+   */
   update(changes: QueryParams) {
     this.pending = { ...this.pending, ...changes };
 
-    if (this.#frame !== undefined) return;
+    if (this.#frame === undefined) {
+      void waitForPromise(
+        new Promise<void>((resolve) => {
+          this.#resolveFrame = resolve;
+        }),
+      );
+    } else {
+      cancelAnimationFrame(this.#frame);
+    }
 
-    void waitForPromise(
-      new Promise<void>((resolve) => {
-        this.#resolveFrame = resolve;
-        this.#frame = requestAnimationFrame(() => {
-          this.#frame = undefined;
-          this.#resolveFrame = undefined;
-          this.#flush(resolve);
-        });
-      }),
-    );
+    this.#frame = requestAnimationFrame(() => {
+      const resolve = this.#resolveFrame;
+
+      this.#frame = undefined;
+      this.#resolveFrame = undefined;
+      this.#flush(resolve);
+    });
   }
 
-  #flush(resolve: () => void) {
+  #flush(resolve: (() => void) | undefined) {
     const sent = this.pending;
 
     /**
@@ -66,7 +75,7 @@ export default class UrlStateService extends Service {
       }
 
       this.pending = rest;
-      resolve();
+      resolve?.();
     };
 
     this.router.transitionTo({ queryParams: sent }).then(done, done);
