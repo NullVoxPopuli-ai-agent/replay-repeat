@@ -1,6 +1,7 @@
 # replay-repeat
 
 Replay part of a video until you know it.
+Open it at https://replay-repeat.nullvoxpopuli.com.
 Load a YouTube link or a video file from your disk. You can drop a video file anywhere on the page.
 
 | key                | action                           |
