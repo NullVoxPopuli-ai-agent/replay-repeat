@@ -16,6 +16,12 @@
   }
 }
 
+.layout__header-end {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-4);
+}
+
 main {
   display: grid;
   gap: var(--gap-4);

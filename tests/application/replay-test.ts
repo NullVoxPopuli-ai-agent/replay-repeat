@@ -80,6 +80,16 @@ async function loadTheTestVideo() {
 module("Application | replay", function (hooks) {
   setupApplicationTest(hooks);
 
+  test("the header links to the source on GitHub", async function (assert) {
+    await visit("/");
+
+    assert.dom("[data-test-github]").hasText("GitHub");
+    assert
+      .dom("[data-test-github]")
+      .hasAttribute("href", "https://github.com/NullVoxPopuli/replay-repeat");
+    assert.dom("[data-test-github]").hasAttribute("target", "_blank");
+  });
+
   test("with no video, a welcome explains the privacy", async function (assert) {
     await visit("/");
 
