@@ -59,8 +59,8 @@ module("Application | replay", function (hooks) {
     assert.dom("video").hasAria("label", "ten-seconds.webm");
     assert.dom("[data-test-now]").hasText("0:00.0");
     assert.dom("[data-test-duration]").hasText("0:10.0");
-    assert.dom('[role="slider"][aria-label="Loop start"]').hasAria("valuenow", "0");
-    assert.dom('[role="slider"][aria-label="Loop end"]').hasAria("valuenow", "10");
+    assert.dom('[aria-label="Loop start"]').hasValue("0");
+    assert.dom('[aria-label="Loop end"]').hasValue("10");
     assert.dom("[data-test-loop]").hasAria("pressed", "false");
   });
 
@@ -95,8 +95,8 @@ module("Application | replay", function (hooks) {
     await seekTo(4, "0:04.0");
     await triggerKeyEvent("[data-test-replay]", "keydown", "]");
 
-    assert.dom('[role="slider"][aria-label="Loop start"]').hasAria("valuenow", "3");
-    assert.dom('[role="slider"][aria-label="Loop end"]').hasAria("valuenow", "4");
+    assert.dom('[aria-label="Loop start"]').hasValue("3");
+    assert.dom('[aria-label="Loop end"]').hasValue("4");
 
     await click("[data-test-loop]");
     assert.dom("[data-test-loop]").hasAria("pressed", "true");
@@ -148,15 +148,20 @@ module("Application | replay", function (hooks) {
     await click("[data-test-play]");
   });
 
-  test("the markers move with the keyboard", async function (assert) {
+  test("a marker moves, and the number keys still work from its thumb", async function (assert) {
     await loadTheTestVideo();
+    await seekTo(7, "0:07.0");
 
-    await triggerKeyEvent('[role="slider"][aria-label="Loop end"]', "keydown", "ArrowLeft");
-    assert.dom('[role="slider"][aria-label="Loop end"]').hasAria("valuenow", "9.9");
-    assert.dom('[role="slider"][aria-label="Loop end"]').hasText("0:09.9");
+    await fillIn('[aria-label="Loop end"]', "9.9");
+    assert.dom('[aria-label="Loop end"]').hasValue("9.9");
+    assert.dom('[aria-label="Loop end"]').hasAria("valuetext", "0:09.9");
+    assert.dom('[aria-label="Loop end"]').isFocused();
+
+    await triggerKeyEvent('[aria-label="Loop end"]', "keydown", "3");
+    assert.dom("[data-test-now]").hasText("0:04.0");
 
     await click("[data-test-reset]");
-    assert.dom('[role="slider"][aria-label="Loop end"]').hasAria("valuenow", "10", "reset");
+    assert.dom('[aria-label="Loop end"]').hasValue("10", "reset");
   });
 
   test("a link that is not from YouTube shows an error", async function (assert) {

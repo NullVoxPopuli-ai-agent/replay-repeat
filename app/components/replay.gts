@@ -36,10 +36,17 @@ function toStep(seconds: number) {
   return Math.round(seconds / STEP) * STEP;
 }
 
+/**
+ * Keys in these elements are text for the element, not shortcuts.
+ * A range input, such as a marker thumb, takes no text.
+ */
+const TEXT_ENTRY =
+  "textarea, select, input:not([type=range], [type=checkbox], [type=radio], [type=button], [type=submit], [type=file])";
+
 function isTyping(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
 
-  return target.isContentEditable || target.closest("input, textarea, select") !== null;
+  return target.isContentEditable || target.closest(TEXT_ENTRY) !== null;
 }
 
 const playheadStyle = (percent: number) => htmlSafe(`left: ${percent}%`);
