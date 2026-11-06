@@ -1,7 +1,7 @@
 import type { TOC } from "@ember/component/template-only";
 
 export const Shortcuts: TOC<object> = <template>
-  <section class="shortcuts" aria-labelledby="shortcuts-title">
+  <section class="shortcuts surface" aria-labelledby="shortcuts-title">
     <h2 id="shortcuts-title">Keys</h2>
     <dl>
       <div>
@@ -33,11 +33,11 @@ export const Shortcuts: TOC<object> = <template>
         <dd>Slower or faster</dd>
       </div>
       <div>
-        <dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt>
-        <dd>Undo a marker move (<kbd>⌘</kbd> + <kbd>Z</kbd> on a Mac)</dd>
+        <dt><kbd>Ctrl</kbd> or <kbd>⌘</kbd> + <kbd>Z</kbd></dt>
+        <dd>Undo a marker move</dd>
       </div>
       <div>
-        <dt><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd></dt>
+        <dt><kbd>Ctrl</kbd> or <kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd></dt>
         <dd>Redo a marker move</dd>
       </div>
     </dl>
