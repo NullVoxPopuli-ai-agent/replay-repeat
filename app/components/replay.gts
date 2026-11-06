@@ -1,11 +1,14 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
 
 import { modifier } from "ember-modifier";
+import { castToBoolean } from "ember-primitives/qp";
 import { Button, RangeSlider, ToggleButton } from "nvp.ui";
 
 import { History } from "#utils/history.ts";
+import { formatSeconds, PARAMS, secondsOf } from "#utils/params.ts";
 import { formatTime } from "#utils/time.ts";
 import Minus from "~icons/mdi/minus";
 import Plus from "~icons/mdi/plus";
@@ -19,6 +22,7 @@ import { Shortcuts } from "./shortcuts.gts";
 import { VideoFile } from "./video-file.gts";
 import { YouTubeVideo } from "./video-youtube.gts";
 
+import type UrlStateService from "#services/url-state.ts";
 import type { Player } from "#utils/player.ts";
 import type { Source } from "#utils/source.ts";
 
@@ -72,25 +76,65 @@ function isTyping(target: EventTarget | null) {
 
 const playheadStyle = (percent: number) => htmlSafe(`left: ${percent}%`);
 
+/**
+ * The state of a replay is in the URL: the loop, its markers, and the speed.
+ * The player's time and play state are not, because they change all the time.
+ */
 export class Replay extends Component<Signature> {
+  @service("url-state") declare urlState: UrlStateService;
+
   @tracked player: Player | undefined;
   @tracked now = 0;
   @tracked duration = 0;
   @tracked paused = true;
-  @tracked looping = false;
-  @tracked chosenStart = 0;
+
+  /**
+   * The markers while a thumb moves. The URL gets them once, when the move ends,
+   * so a drag is one history entry.
+   */
+  @tracked draft: Markers | undefined;
+
+  markers = new History<Markers>({ start: 0, end: undefined }, sameMarkers);
+
+  #seekedAt = 0;
+
+  /**
+   * The speed that the player has from this app, and when it got it.
+   * A different speed in the player after that came from YouTube's own menu.
+   */
+  #appliedRate = 1;
+  #rateSetAt = 0;
+
+  get looping() {
+    return castToBoolean(this.urlState.param(PARAMS.loop));
+  }
+
+  get chosenStart() {
+    return this.draft?.start ?? secondsOf(this.urlState.param(PARAMS.loopStart)) ?? 0;
+  }
 
   /**
    * `undefined` means the end of the video,
    * which is unknown for YouTube until the video loads.
    */
-  @tracked chosenEnd: number | undefined;
+  get chosenEnd() {
+    return this.draft ? this.draft.end : secondsOf(this.urlState.param(PARAMS.loopEnd));
+  }
 
-  @tracked rate = 1;
+  get rate() {
+    const rate = Number.parseFloat(this.urlState.param(PARAMS.speed) ?? "");
 
-  markers = new History<Markers>({ start: 0, end: undefined }, sameMarkers);
+    const known = RATES.some((slower) => slower <= rate) && RATES.some((faster) => faster >= rate);
 
-  #seekedAt = 0;
+    return known ? rate : 1;
+  }
+
+  writeMarkers(markers: Markers) {
+    this.urlState.update({
+      [PARAMS.loopStart]: markers.start > 0 ? formatSeconds(markers.start) : null,
+      [PARAMS.loopEnd]: markers.end === undefined ? null : formatSeconds(markers.end),
+    });
+  }
 
   get file() {
     return this.args.source.kind === "file" ? this.args.source.file : undefined;
@@ -138,7 +182,7 @@ export class Replay extends Component<Signature> {
   };
 
   toggleLoop = () => {
-    this.looping = !this.looping;
+    this.urlState.update({ [PARAMS.loop]: this.looping ? null : "1" });
   };
 
   toLoopStart = () => {
@@ -147,7 +191,13 @@ export class Replay extends Component<Signature> {
 
   setRate(rate: number) {
     this.player?.setRate(rate);
-    this.rate = rate;
+    this.writeRate(rate);
+  }
+
+  writeRate(rate: number) {
+    this.#appliedRate = rate;
+    this.#rateSetAt = performance.now();
+    this.urlState.update({ [PARAMS.speed]: rate === 1 ? null : String(rate) });
   }
 
   get canSlowDown() {
@@ -170,19 +220,19 @@ export class Replay extends Component<Signature> {
    * Live while a marker moves. `recordMarkers` makes the undo step when the move ends.
    */
   setMarkers = (start: number, end: number) => {
-    this.chosenStart = start;
-    this.chosenEnd = end;
+    this.draft = { start, end };
   };
 
   recordMarkers = () => {
-    this.markers.record({ start: this.chosenStart, end: this.chosenEnd });
+    const markers = { start: this.chosenStart, end: this.chosenEnd };
+
+    this.draft = undefined;
+    this.markers.record(markers);
+    this.writeMarkers(markers);
   };
 
   applyMarkers(markers: Markers | undefined) {
-    if (!markers) return;
-
-    this.chosenStart = markers.start;
-    this.chosenEnd = markers.end;
+    if (markers) this.writeMarkers(markers);
   }
 
   undo = () => {
@@ -193,20 +243,30 @@ export class Replay extends Component<Signature> {
     this.applyMarkers(this.markers.redo());
   };
 
+  /**
+   * A new value for the markers, as one undo step.
+   */
+  moveMarkers(markers: Markers) {
+    this.markers.record(markers);
+    this.writeMarkers(markers);
+  }
+
   markStart = () => {
-    this.chosenStart = Math.max(0, Math.min(toStep(this.now), this.loopEnd - STEP));
-    this.recordMarkers();
+    this.moveMarkers({
+      start: Math.max(0, Math.min(toStep(this.now), this.loopEnd - STEP)),
+      end: this.chosenEnd,
+    });
   };
 
   markEnd = () => {
-    this.chosenEnd = Math.min(this.duration, Math.max(toStep(this.now), this.loopStart + STEP));
-    this.recordMarkers();
+    this.moveMarkers({
+      start: this.chosenStart,
+      end: Math.min(this.duration, Math.max(toStep(this.now), this.loopStart + STEP)),
+    });
   };
 
   resetMarkers = () => {
-    this.chosenStart = 0;
-    this.chosenEnd = undefined;
-    this.recordMarkers();
+    this.moveMarkers({ start: 0, end: undefined });
   };
 
   tick = () => {
@@ -220,10 +280,7 @@ export class Replay extends Component<Signature> {
     if (player.duration !== this.duration) this.duration = player.duration;
     if (player.paused !== this.paused) this.paused = player.paused;
 
-    /**
-     * YouTube's own settings menu can change the speed too.
-     */
-    if (player.rate !== this.rate) this.rate = player.rate;
+    this.syncRate(player);
 
     if (!this.looping || performance.now() - this.#seekedAt < SEEK_SETTLE_MS) return;
 
@@ -238,6 +295,26 @@ export class Replay extends Component<Signature> {
       player.play();
     }
   };
+
+  /**
+   * The URL holds the speed. A new speed there goes to the player.
+   * A new speed from YouTube's own menu goes to the URL.
+   *
+   * YouTube applies a speed a few frames later,
+   * so the player is not read again until it settled.
+   */
+  syncRate(player: Player) {
+    if (this.rate !== this.#appliedRate) {
+      player.setRate(this.rate);
+      this.#appliedRate = this.rate;
+      this.#rateSetAt = performance.now();
+
+      return;
+    }
+
+    if (performance.now() - this.#rateSetAt < SEEK_SETTLE_MS) return;
+    if (player.rate !== this.#appliedRate) this.writeRate(player.rate);
+  }
 
   onKey = (event: KeyboardEvent) => {
     if (isTyping(event.target)) return;

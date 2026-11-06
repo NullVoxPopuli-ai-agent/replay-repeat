@@ -19,6 +19,21 @@ Load a YouTube link or a video file from your disk. You can drop a video file an
 Drag the two loop markers under the video to pick the part that loops.
 When the loop is on, going back stops at the loop start.
 
+## Links
+
+The URL holds the video, the loop, and the speed, so a link opens the same replay.
+For example: `/?youtube_video_id=dQw4w9WgXcQ&loop_start=30&loop_end=35.5&loop=1&speed=0.75`
+
+| param              | value                                 |
+| :----------------- | :------------------------------------ |
+| `youtube_video_id` | the id of a YouTube video             |
+| `loop_start`       | seconds, default `0`                  |
+| `loop_end`         | seconds, default the end of the video |
+| `loop`             | `1` when the loop is on               |
+| `speed`            | `0.25` to `2`, default `1`            |
+
+A file from your disk cannot be in a link, so a file uses only the last four.
+
 There is no server:
 
 - A video file stays on your disk, and the browser plays it from there.

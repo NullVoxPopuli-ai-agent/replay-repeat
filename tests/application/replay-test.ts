@@ -1,5 +1,6 @@
 import {
   click,
+  currentURL,
   fillIn,
   find,
   findAll,
@@ -38,6 +39,13 @@ function video() {
 async function seekTo(seconds: number, shown: string) {
   video().currentTime = seconds;
   await waitUntil(() => find("[data-test-now]")?.textContent === shown);
+}
+
+/**
+ * The query params in the URL, as an object.
+ */
+function queryParams() {
+  return Object.fromEntries(new URL(currentURL(), "https://replay.invalid").searchParams);
 }
 
 async function theTestVideo() {
@@ -320,6 +328,115 @@ module("Application | replay", function (hooks) {
 
     await triggerKeyEvent('input[name="link"]', "keydown", "Z", { ctrlKey: true });
     assert.dom('[aria-label="Loop start"]').hasValue("3");
+  });
+
+  test("the loop, its markers, and the speed are in the URL", async function (assert) {
+    await loadTheTestVideo();
+    assert.deepEqual(queryParams(), {}, "the defaults are not in the URL");
+
+    await seekTo(3, "0:03.0");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "[");
+    await seekTo(4.5, "0:04.5");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "]");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "L");
+    await triggerKeyEvent("[data-test-replay]", "keydown", ">");
+
+    assert.deepEqual(queryParams(), {
+      loop_start: "3",
+      loop_end: "4.5",
+      loop: "1",
+      speed: "1.25",
+    });
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "L");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "<");
+    await click("[data-test-reset]");
+
+    assert.deepEqual(queryParams(), {}, "the defaults leave the URL again");
+  });
+
+  test("a burst of changes is one transition", async function (assert) {
+    await loadTheTestVideo();
+
+    const router = this.owner.lookup("service:router");
+
+    router.on("routeDidChange", () => assert.step("transition"));
+
+    /**
+     * No `await` between the keys, so all three land before the next frame.
+     */
+    for (const key of ["L", ">", ">"]) {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    }
+
+    await settled();
+
+    assert.verifySteps(["transition"]);
+    assert.deepEqual(queryParams(), { loop: "1", speed: "1.5" });
+  });
+
+  test("a drag of a marker is one change of the URL", async function (assert) {
+    await loadTheTestVideo();
+
+    await fillIn('[aria-label="Loop end"]', "6");
+
+    assert.deepEqual(queryParams(), { loop_end: "6" });
+  });
+
+  test("the URL sets the loop, its markers, and the speed", async function (assert) {
+    await loadTheTestVideo();
+    await visit("/?loop_start=2&loop_end=4&loop=1&speed=1.5");
+
+    assert.dom('[aria-label="Loop start"]').hasValue("2");
+    assert.dom('[aria-label="Loop end"]').hasValue("4");
+    assert.dom("[data-test-loop]").hasAria("pressed", "true");
+    assert.dom("[data-test-looping]").hasText("Looping 0:02.0 to 0:04.0");
+    assert.dom("[data-test-rate]").hasText("1.5×");
+
+    await waitUntil(() => video().playbackRate === 1.5, { timeout: 1000 });
+    assert.strictEqual(video().playbackRate, 1.5, "the video plays at the speed in the URL");
+  });
+
+  test("values in the URL that are not times or speeds are ignored", async function (assert) {
+    await loadTheTestVideo();
+    await visit("/?loop_start=soon&loop_end=-3&speed=9");
+
+    assert.dom('[aria-label="Loop start"]').hasValue("0");
+    assert.dom('[aria-label="Loop end"]').hasValue("10");
+    assert.dom("[data-test-rate]").hasText("1×");
+  });
+
+  test("a YouTube link goes in the URL, and a new video clears the loop", async function (assert) {
+    await loadTheTestVideo();
+    await visit("/?loop_start=2&loop=1&speed=1.5");
+    await clickTab("YouTube link");
+    await fillIn('input[name="link"]', "https://youtu.be/dQw4w9WgXcQ");
+    await click('button[type="submit"]');
+
+    assert.deepEqual(queryParams(), { youtube_video_id: "dQw4w9WgXcQ", speed: "1.5" });
+    assert.dom("video").doesNotExist();
+    assert.dom("[data-test-replay]").exists();
+
+    await clickTab("File on disk");
+    await triggerEvent(".nvp__file-drop input[type=file]", "change", {
+      files: [await theTestVideo()],
+    });
+
+    assert.deepEqual(queryParams(), { speed: "1.5" }, "a file is not in the URL");
+    assert.dom("video").exists();
+  });
+
+  test("a YouTube video id in the URL opens that video", async function (assert) {
+    await visit("/?youtube_video_id=dQw4w9WgXcQ");
+
+    assert.dom("[data-test-welcome]").doesNotExist();
+    assert.dom("[data-test-replay]").exists();
+  });
+
+  test("a YouTube video id that is not one is ignored", async function (assert) {
+    await visit("/?youtube_video_id=not-an-id");
+
+    assert.dom("[data-test-welcome]").exists();
   });
 
   test("a link that is not from YouTube shows an error", async function (assert) {
