@@ -397,30 +397,49 @@ export class Replay extends Component<Signature> {
           </RangeSlider>
 
           <div class="replay__buttons">
-            <div role="group" aria-label="Playback">
-              <Button @variant="primary" @onClick={{this.togglePlay}} data-test-play>
-                {{if this.paused "Play" "Pause"}}
-              </Button>
-              <ToggleButton
-                @pressed={{this.looping}}
-                @variant={{if this.looping "primary"}}
-                @onClick={{this.toggleLoop}}
-                data-test-loop
-              >
-                {{#if this.looping}}
-                  <Repeat aria-hidden="true" />
-                {{else}}
-                  <RepeatOff aria-hidden="true" />
-                {{/if}}
-                Loop
-              </ToggleButton>
+            <div class="replay__playback">
+              <div role="group" aria-label="Playback">
+                <Button @variant="primary" @onClick={{this.togglePlay}} data-test-play>
+                  {{if this.paused "Play" "Pause"}}
+                </Button>
+                <ToggleButton
+                  @pressed={{this.looping}}
+                  @variant={{if this.looping "primary"}}
+                  @onClick={{this.toggleLoop}}
+                  data-test-loop
+                >
+                  {{#if this.looping}}
+                    <Repeat aria-hidden="true" />
+                  {{else}}
+                    <RepeatOff aria-hidden="true" />
+                  {{/if}}
+                  Loop
+                </ToggleButton>
+              </div>
+
+              <div role="group" aria-label="Speed" class="replay__speed">
+                <Button
+                  aria-label="Slower"
+                  @disabled={{unless this.canSlowDown "Already the slowest speed"}}
+                  @onClick={{this.slower}}
+                  data-test-slower
+                ><Minus aria-hidden="true" /></Button>
+                <span class="replay__rate" data-test-rate>{{formatRate this.rate}}</span>
+                <Button
+                  aria-label="Faster"
+                  @disabled={{unless this.canSpeedUp "Already the fastest speed"}}
+                  @onClick={{this.faster}}
+                  data-test-faster
+                ><Plus aria-hidden="true" /></Button>
+              </div>
+
               <Button @onClick={{this.toLoopStart}} data-test-to-loop-start>
                 <:start><SkipPrevious aria-hidden="true" /></:start>
                 <:default>Go to loop start</:default>
               </Button>
             </div>
 
-            <div role="group" aria-label="Loop markers">
+            <div role="group" aria-label="Loop markers" class="replay__marker-buttons">
               <Button @onClick={{this.markStart}}>Set start here</Button>
               <Button @onClick={{this.markEnd}}>Set end here</Button>
               <Button
@@ -436,22 +455,6 @@ export class Replay extends Component<Signature> {
                 data-test-redo
               ><Redo aria-hidden="true" /></Button>
               <Button @variant="bare" @onClick={{this.resetMarkers}} data-test-reset>Reset markers</Button>
-            </div>
-
-            <div role="group" aria-label="Speed" class="replay__speed">
-              <Button
-                aria-label="Slower"
-                @disabled={{unless this.canSlowDown "Already the slowest speed"}}
-                @onClick={{this.slower}}
-                data-test-slower
-              ><Minus aria-hidden="true" /></Button>
-              <span class="replay__rate" data-test-rate>{{formatRate this.rate}}</span>
-              <Button
-                aria-label="Faster"
-                @disabled={{unless this.canSpeedUp "Already the fastest speed"}}
-                @onClick={{this.faster}}
-                data-test-faster
-              ><Plus aria-hidden="true" /></Button>
             </div>
           </div>
         </div>

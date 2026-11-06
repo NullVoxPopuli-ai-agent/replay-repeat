@@ -139,14 +139,28 @@ main {
 .replay__buttons {
   display: flex;
   flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
   gap: var(--gap-2) var(--gap-4);
 
-  > [role="group"] {
+  [role="group"] {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--gap-2);
   }
+}
+
+.replay__playback {
+  display: grid;
+  justify-items: start;
+  gap: var(--gap-2);
+}
+
+/* Stays at the right, also when it wraps under the playback buttons */
+.replay__marker-buttons {
+  justify-content: end;
+  margin-inline-start: auto;
 }
 
 .replay__rate {
