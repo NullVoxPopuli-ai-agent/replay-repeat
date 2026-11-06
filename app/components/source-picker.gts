@@ -5,6 +5,7 @@ import { on } from "@ember/modifier";
 import { Button, FileDrop } from "nvp.ui";
 import { Tabs } from "nvp.ui/tabs";
 
+import { isInstagramLink } from "#utils/instagram.ts";
 import { fileSource, MEDIA_FILES } from "#utils/source.ts";
 import { youTubeIdOf } from "#utils/youtube.ts";
 
@@ -27,7 +28,10 @@ export class SourcePicker extends Component<Signature> {
     const id = typeof link === "string" ? youTubeIdOf(link) : undefined;
 
     if (!id) {
-      this.linkError = "That is not a link to a YouTube video.";
+      this.linkError =
+        typeof link === "string" && isInstagramLink(link)
+          ? "Instagram does not let other sites control its videos. In the Instagram app, tap Share, then Download. Then drop the file here."
+          : "That is not a link to a YouTube video.";
 
       return;
     }
