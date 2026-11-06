@@ -593,6 +593,21 @@ module("Application | replay", function (hooks) {
     assert.dom("[data-test-replay]").hasAttribute("data-theatre", "", "T enters");
   });
 
+  test("Escape leaves theatre mode, and T toggles it", async function (assert) {
+    await loadTheTestVideo();
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "T");
+    assert.dom("[data-test-theatre]").hasAria("pressed", "true");
+
+    await triggerKeyEvent("[data-test-replay]", "keydown", "T");
+    assert.dom("[data-test-theatre]").hasAria("pressed", "false");
+    assert.dom("[data-test-player]").doesNotHaveAttribute("data-overlay");
+
+    await click("[data-test-theatre]");
+    await triggerKeyEvent("[data-test-replay]", "keydown", "Escape");
+    assert.dom("[data-test-replay]").doesNotHaveAttribute("data-theatre");
+  });
+
   test("over the video, the controls hide when nothing happens", async function (assert) {
     await loadTheTestVideo();
     await click("[data-test-theatre]");

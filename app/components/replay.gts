@@ -58,6 +58,11 @@ const sameMarkers = (a: Markers, b: Markers) => a.start === b.start && a.end ===
 const formatRate = (rate: number) => `${rate}×`;
 
 /**
+ * How the player shows: in the page, across the window, or full screen.
+ */
+type View = "normal" | "theatre" | "fullscreen";
+
+/**
  * In theatre mode and full screen, the controls over the video
  * fade out after this long without a pointer move or a key press.
  */
@@ -103,15 +108,16 @@ export class Replay extends Component<Signature> {
   @tracked muted = false;
 
   /**
-   * The player spans the window, with the controls over the video.
+   * Only `show` changes the view.
+   * Full screen starts and ends in `fullscreenchange`,
+   * because the browser can also leave it on its own, for example on Escape.
    */
-  @tracked theatre = false;
+  @tracked view: View = "normal";
 
   /**
-   * Set from `fullscreenchange`, because the browser can leave full screen
-   * on its own, for example on Escape.
+   * The view that full screen goes back to.
    */
-  @tracked fullscreen = false;
+  #afterFullscreen: Exclude<View, "fullscreen"> = "normal";
 
   /**
    * The controls over the video are hidden, and so is the cursor.
@@ -131,11 +137,19 @@ export class Replay extends Component<Signature> {
   #activeAt = 0;
   #playerElement: HTMLElement | undefined;
 
+  get theatre() {
+    return this.view === "theatre";
+  }
+
+  get fullscreen() {
+    return this.view === "fullscreen";
+  }
+
   /**
    * The controls go over the video, and hide when nothing happens.
    */
   get overlay() {
-    return this.theatre || this.fullscreen;
+    return this.view !== "normal";
   }
 
   /**
@@ -249,32 +263,68 @@ export class Replay extends Component<Signature> {
   };
 
   /**
-   * Theatre mode sizes the player to the window, so it scrolls to the top of it.
+   * Every change of view goes through here.
+   *
+   * - Into full screen, the view to come back to is remembered.
+   * - Out of full screen, to any view, full screen ends first,
+   *   and `fullscreenChanged` shows that view.
+   * - A browser can refuse full screen, for example without a click or a key press first.
    */
-  toggleTheatre = () => {
-    this.theatre = !this.theatre;
+  show(view: View) {
     this.activity();
 
-    if (this.theatre) {
-      requestAnimationFrame(() => this.#playerElement?.scrollIntoView({ block: "start" }));
+    if (view === this.view) return;
+
+    if (view === "fullscreen") {
+      this.#afterFullscreen = this.view === "theatre" ? "theatre" : "normal";
+      void this.#playerElement?.requestFullscreen().catch(() => {});
+
+      return;
     }
-  };
 
-  /**
-   * The player and its controls go full screen together.
-   * A browser can refuse, for example without a click or a key press first.
-   */
-  toggleFullscreen = () => {
-    this.activity();
-
-    if (document.fullscreenElement) {
+    if (this.view === "fullscreen") {
+      this.#afterFullscreen = view;
       void document.exitFullscreen().catch(() => {});
 
       return;
     }
 
-    void this.#playerElement?.requestFullscreen().catch(() => {});
+    this.view = view;
+    this.alignTheatre();
+  }
+
+  toggleTheatre = () => {
+    this.show(this.theatre ? "normal" : "theatre");
   };
+
+  toggleFullscreen = () => {
+    this.show(this.fullscreen ? this.#afterFullscreen : "fullscreen");
+  };
+
+  fullscreenChanged = () => {
+    const entered =
+      Boolean(this.#playerElement) && document.fullscreenElement === this.#playerElement;
+
+    this.activity();
+
+    if (entered) {
+      this.view = "fullscreen";
+    } else if (this.fullscreen) {
+      this.view = this.#afterFullscreen;
+      this.alignTheatre();
+    }
+  };
+
+  /**
+   * Theatre mode sizes the player to the window, so the player goes to the top of it,
+   * also when theatre mode comes back after full screen.
+   * The frame lets the player take its theatre size first.
+   */
+  alignTheatre() {
+    if (!this.theatre) return;
+
+    requestAnimationFrame(() => this.#playerElement?.scrollIntoView({ block: "start" }));
+  }
 
   activity = () => {
     this.#activeAt = performance.now();
@@ -521,9 +571,9 @@ export class Replay extends Component<Signature> {
         /**
          * In full screen, the browser handles Escape itself.
          */
-        if (!this.theatre || this.fullscreen) return;
+        if (!this.theatre) return;
 
-        this.theatre = false;
+        this.show("normal");
 
         break;
       default:
@@ -576,20 +626,14 @@ export class Replay extends Component<Signature> {
       });
     };
 
-    const onFullscreen = () => {
-      this.fullscreen =
-        Boolean(this.#playerElement) && document.fullscreenElement === this.#playerElement;
-      this.activity();
-    };
-
     document.addEventListener("keydown", this.onKey);
-    document.addEventListener("fullscreenchange", onFullscreen);
+    document.addEventListener("fullscreenchange", this.fullscreenChanged);
     window.addEventListener("blur", onBlur);
 
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener("keydown", this.onKey);
-      document.removeEventListener("fullscreenchange", onFullscreen);
+      document.removeEventListener("fullscreenchange", this.fullscreenChanged);
       window.removeEventListener("blur", onBlur);
     };
   });
