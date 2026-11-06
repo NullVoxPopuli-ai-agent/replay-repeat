@@ -650,6 +650,22 @@ module("Application | replay", function (hooks) {
     await click("[data-test-play]");
   });
 
+  test("an Instagram link says how to get the file", async function (assert) {
+    await visit("/");
+    await fillIn(
+      'input[name="link"]',
+      "https://www.instagram.com/reel/DfFMX-cDtv1/?utm_source=ig_web_copy_link",
+    );
+    await click('button[type="submit"]');
+
+    assert
+      .dom('[role="alert"]')
+      .hasText(
+        "Instagram does not let other sites control its videos. In the Instagram app, tap Share, then Download. Then drop the file here.",
+      );
+    assert.dom("[data-test-youtube]").doesNotExist();
+  });
+
   test("a link that is not from YouTube shows an error", async function (assert) {
     await visit("/");
     await fillIn('input[name="link"]', "https://example.com/watch?v=dQw4w9WgXcQ");
