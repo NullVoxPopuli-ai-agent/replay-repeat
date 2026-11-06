@@ -282,6 +282,157 @@ kbd {
   max-width: 40rem;
 }
 
+.welcome__art {
+  --tv-body: #ffb6d5;
+  --tv-top: #ffd0e4;
+  --tv-shade: #ff8fbf;
+  --tv-screen: #fff5fa;
+  --tv-accent: #ff5fa2;
+  --tv-bow: #ff8cc0;
+  --tv-ink: #3b2a4d;
+  --tv-blush: #ff7eb6;
+  --tv-knob: #c9b6ff;
+  --tv-sparkle: #ffd84d;
+  --tv-floater: #ff7eb6;
+
+  .tv-body {
+    fill: var(--tv-body);
+  }
+
+  .tv-top {
+    fill: var(--tv-top);
+  }
+
+  .tv-shade {
+    fill: var(--tv-shade);
+  }
+
+  .tv-screen {
+    fill: var(--tv-screen);
+  }
+
+  .tv-accent {
+    fill: var(--tv-accent);
+  }
+
+  .tv-bow {
+    fill: var(--tv-bow);
+  }
+
+  .tv-ink {
+    fill: var(--tv-ink);
+  }
+
+  .tv-shine,
+  .tv-fang {
+    fill: #fff;
+  }
+
+  .tv-blush {
+    fill: var(--tv-blush);
+    opacity: 0.7;
+  }
+
+  .tv-knob {
+    fill: var(--tv-knob);
+  }
+
+  .tv-tongue {
+    fill: #ff6b9a;
+  }
+
+  .tv-sparkles {
+    fill: var(--tv-sparkle);
+  }
+
+  .tv-moon {
+    fill: #f3ead2;
+  }
+
+  .tv-floaters {
+    fill: var(--tv-floater);
+  }
+
+  .tv-antenna,
+  .tv-glare,
+  .tv-lashes,
+  .tv-liner,
+  .tv-blush-lines,
+  .tv-mouth {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tv-antenna {
+    stroke: var(--tv-shade);
+    stroke-width: 4;
+  }
+
+  .tv-glare {
+    stroke: #fff;
+    stroke-width: 5;
+  }
+
+  .tv-lashes,
+  .tv-liner {
+    stroke: var(--tv-ink);
+    stroke-width: 2.5;
+  }
+
+  .tv-blush-lines {
+    stroke: #fff;
+    stroke-width: 1.5;
+  }
+
+  .tv-mouth {
+    stroke: var(--tv-ink);
+    stroke-width: 3;
+  }
+
+  .welcome__goth {
+    display: none;
+  }
+}
+
+/* Dark mode: goth mode */
+.theme-dark .welcome__art {
+  --tv-body: #2b2233;
+  --tv-top: #3b2f47;
+  --tv-shade: #4a3a5c;
+  --tv-screen: #e9def2;
+  --tv-accent: #b3164a;
+  --tv-bow: #0d0a10;
+  --tv-ink: #1b1022;
+  --tv-blush: #9b6bc4;
+  --tv-knob: #b3164a;
+  --tv-sparkle: #d6d0e2;
+  --tv-floater: #b9a6d6;
+
+  .tv-glare {
+    stroke: #6d5a80;
+  }
+
+  .tv-lashes,
+  .tv-liner {
+    stroke-width: 3.5;
+  }
+
+  .tv-fang {
+    stroke: var(--tv-ink);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+
+  .welcome__goth {
+    display: inline;
+  }
+
+  .welcome__cute {
+    display: none;
+  }
+}
+
 .welcome__art * {
   transform-box: fill-box;
   transform-origin: center;
