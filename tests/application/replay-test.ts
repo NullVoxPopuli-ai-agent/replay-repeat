@@ -200,6 +200,44 @@ module("Application | replay", function (hooks) {
     await click("[data-test-play]");
   });
 
+  test("with the loop on, play starts at the loop start", async function (assert) {
+    await loadTheTestVideo();
+    await visit("/?loop=1&loop_start=6&loop_end=8");
+    assert.strictEqual(video().currentTime, 0, "the video is at its start");
+
+    await click("[data-test-play]");
+    await waitUntil(() => video().currentTime >= 6 && !video().paused, { timeout: 2000 });
+
+    assert.true(video().currentTime < 8, "it plays inside the loop");
+
+    await click("[data-test-play]");
+  });
+
+  test("with the loop on, play inside the loop stays where it is", async function (assert) {
+    await loadTheTestVideo();
+    await visit("/?loop=1&loop_start=2&loop_end=8");
+    await seekTo(5, "0:05.0");
+
+    await click("[data-test-play]");
+    await waitUntil(() => !video().paused, { timeout: 2000 });
+
+    assert.true(video().currentTime >= 5, "it did not jump back to the loop start");
+
+    await click("[data-test-play]");
+  });
+
+  test("with the loop off, play starts where the video is", async function (assert) {
+    await loadTheTestVideo();
+    await visit("/?loop_start=6&loop_end=8");
+
+    await click("[data-test-play]");
+    await waitUntil(() => !video().paused, { timeout: 2000 });
+
+    assert.true(video().currentTime < 6, "it did not jump to the loop start");
+
+    await click("[data-test-play]");
+  });
+
   test("the whole video loops when the markers are at its ends", async function (assert) {
     await loadTheTestVideo();
     await click("[data-test-loop]");
