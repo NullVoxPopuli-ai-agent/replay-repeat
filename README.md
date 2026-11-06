@@ -24,8 +24,6 @@ There is no server:
 - For YouTube links, the app loads the YouTube IFrame Player API.
 
 This is an Ember app, created with [ember.nvp](https://github.com/NullVoxPopuli/ember.nvp), with [nvp.ui](https://github.com/NullVoxPopuli/nvp.ui) for the UI.
-Each `pr-nvp.ui-<number>/` folder holds a component from an open nvp.ui pull request.
-Its README tells how to remove the folder after a release.
 
 ## Getting Started
 

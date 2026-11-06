@@ -3,9 +3,8 @@ import { tracked } from "@glimmer/tracking";
 import { htmlSafe } from "@ember/template";
 
 import { modifier } from "ember-modifier";
-import { Button, ToggleButton } from "nvp.ui";
+import { Button, RangeSlider, ToggleButton } from "nvp.ui";
 
-import { RangeSlider } from "#pr-nvp.ui-122/range-slider.gts";
 import { History } from "#utils/history.ts";
 import { formatTime } from "#utils/time.ts";
 import Minus from "~icons/mdi/minus";

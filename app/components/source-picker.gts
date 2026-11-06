@@ -2,10 +2,9 @@ import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { on } from "@ember/modifier";
 
-import { Button } from "nvp.ui";
+import { Button, FileDrop } from "nvp.ui";
 import { Tabs } from "nvp.ui/tabs";
 
-import { FileDrop } from "#pr-nvp.ui-123/file-drop.gts";
 import { youTubeIdOf } from "#utils/youtube.ts";
 
 import type { Source } from "#utils/source.ts";
@@ -43,10 +42,8 @@ export class SourcePicker extends Component<Signature> {
   };
 
   <template>
-    {{! `@content` is required by the Tabs types of nvp.ui 0.11.
-          https://github.com/NullVoxPopuli/nvp.ui/pull/124 makes it optional. }}
     <Tabs as |Tab|>
-      <Tab @label="YouTube link" @content={{undefined}}>
+      <Tab @label="YouTube link">
         <form class="source__form" {{on "submit" this.loadLink}}>
           <label class="source__field">
             <span>YouTube link</span>
@@ -66,7 +63,7 @@ export class SourcePicker extends Component<Signature> {
         <p id="link-error" class="replay__error" role="alert">{{this.linkError}}</p>
       </Tab>
 
-      <Tab @label="File on disk" @content={{undefined}}>
+      <Tab @label="File on disk">
         <FileDrop @accept="video/*,audio/*" @onFiles={{this.loadFiles}} as |zone|>
           {{#if zone.isDragging}}
             Let go to load the video
