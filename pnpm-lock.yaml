@@ -24,8 +24,8 @@ importers:
         specifier: ^4.3.0
         version: 4.3.0(@babel/core@7.29.13)
       ember-primitives:
-        specifier: ^0.64.0
-        version: 0.64.0(@babel/core@7.29.13)(@ember/test-helpers@5.8.0(@babel/core@7.29.13))(@ember/test-waiters@4.1.2)(@glimmer/component@2.2.1)(@glint/template@1.11.1)(ember-modifier@4.3.0(@babel/core@7.29.13))(ember-resources@7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1))
+        specifier: ^0.64.1
+        version: 0.64.1(@babel/core@7.29.13)(@ember/test-helpers@5.8.0(@babel/core@7.29.13))(@ember/test-waiters@4.1.2)(@glimmer/component@2.2.1)(@glint/template@1.11.1)(ember-modifier@4.3.0(@babel/core@7.29.13))(ember-resources@7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1))
       ember-source:
         specifier: ~7.4.0
         version: 7.4.0(@glimmer/component@2.2.1)
@@ -2510,8 +2510,8 @@ packages:
       '@glint/template':
         optional: true
 
-  ember-primitives@0.64.0:
-    resolution: {integrity: sha512-DZ6RdkQCUoQr9R8i72GeMOlmXtlb38Fid/NLBOIqFeYwZEScvGVNg7xfwZrxa99p2jTHWjiFc9K+izXCslmKfg==}
+  ember-primitives@0.64.1:
+    resolution: {integrity: sha512-wvs9dm+d2OSMmrdku2l8LKKp3jg4RkwjiHV4kG08QvR8D8VY2dJzvksKf00G/x1P6ttWGrzvVkGl7pqzTjk0MA==}
     hasBin: true
     peerDependencies:
       '@ember/test-helpers': '>= 3.2.0'
@@ -6244,7 +6244,7 @@ snapshots:
       eslint-import-resolver-typescript: 4.4.5(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint@10.14.0))(eslint@10.14.0)
       eslint-plugin-decorator-position: 6.1.1(@babel/eslint-parser@8.0.7(@babel/core@7.29.13)(eslint@10.14.0))(eslint@10.14.0)
       eslint-plugin-ember: 13.9.1(@babel/eslint-parser@8.0.7(@babel/core@7.29.13)(eslint@10.14.0))(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(@typescript/typescript6@6.0.2)(eslint@10.14.0)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint-import-resolver-typescript@4.4.5(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint@10.14.0))(eslint@10.14.0))(eslint@10.14.0)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint-import-resolver-typescript@4.4.5)(eslint@10.14.0)
       eslint-plugin-json: 4.0.1
       eslint-plugin-n: 18.5.0(@typescript/typescript6@6.0.2)(eslint@10.14.0)
       eslint-plugin-simple-import-sort: 13.0.0(eslint@10.14.0)
@@ -7782,7 +7782,7 @@ snapshots:
       - '@babel/core'
       - supports-color
 
-  ember-primitives@0.64.0(@babel/core@7.29.13)(@ember/test-helpers@5.8.0(@babel/core@7.29.13))(@ember/test-waiters@4.1.2)(@glimmer/component@2.2.1)(@glint/template@1.11.1)(ember-modifier@4.3.0(@babel/core@7.29.13))(ember-resources@7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1)):
+  ember-primitives@0.64.1(@babel/core@7.29.13)(@ember/test-helpers@5.8.0(@babel/core@7.29.13))(@ember/test-waiters@4.1.2)(@glimmer/component@2.2.1)(@glint/template@1.11.1)(ember-modifier@4.3.0(@babel/core@7.29.13))(ember-resources@7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1)):
     dependencies:
       '@babel/runtime': 7.29.13
       '@ember/test-waiters': 4.1.2
@@ -8033,7 +8033,7 @@ snapshots:
       tinyglobby: 0.2.17
       unrs-resolver: 1.13.0
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint-import-resolver-typescript@4.4.5(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint@10.14.0))(eslint@10.14.0))(eslint@10.14.0)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint-import-resolver-typescript@4.4.5)(eslint@10.14.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -8094,7 +8094,7 @@ snapshots:
       eslint: 10.14.0
       eslint-compat-utils: 0.5.1(eslint@10.14.0)
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint-import-resolver-typescript@4.4.5(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint@10.14.0))(eslint@10.14.0))(eslint@10.14.0):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.14.0))(eslint-import-resolver-typescript@4.4.5)(eslint@10.14.0):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.2.0
@@ -9297,7 +9297,7 @@ snapshots:
       decorator-transforms: 2.4.0(@babel/core@7.29.13)
       ember-mobile-menu: 6.1.0(@babel/core@7.29.13)(@ember/test-helpers@5.8.0(@babel/core@7.29.13))(@glint/template@1.11.1)(ember-resources@7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1))(ember-source@7.4.0(@glimmer/component@2.2.1))
       ember-modifier: 4.3.0(@babel/core@7.29.13)
-      ember-primitives: 0.64.0(@babel/core@7.29.13)(@ember/test-helpers@5.8.0(@babel/core@7.29.13))(@ember/test-waiters@4.1.2)(@glimmer/component@2.2.1)(@glint/template@1.11.1)(ember-modifier@4.3.0(@babel/core@7.29.13))(ember-resources@7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1))
+      ember-primitives: 0.64.1(@babel/core@7.29.13)(@ember/test-helpers@5.8.0(@babel/core@7.29.13))(@ember/test-waiters@4.1.2)(@glimmer/component@2.2.1)(@glint/template@1.11.1)(ember-modifier@4.3.0(@babel/core@7.29.13))(ember-resources@7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1))
       ember-resources: 7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1)
     transitivePeerDependencies:
       - '@babel/core'
