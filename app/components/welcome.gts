@@ -25,19 +25,11 @@ export const Welcome: TOC<object> = <template>
 
     <div class="welcome__text">
       <h2 id="welcome-title">Pick a video to start</h2>
-      <p>Paste a YouTube link, or choose a video file from your computer.</p>
-
-      <h3>Why only these two?</h3>
-      <p>For your privacy. Replay, repeat does nothing on its own, and it connects to nothing.</p>
-      <ul>
-        <li>A video file stays on your computer. Your browser plays it from where it is, and nothing
-          uploads it.</li>
-        <li>A YouTube link plays in YouTube's own player, so YouTube's privacy rules apply there.
-          The app talks to YouTube only after you load a link.</li>
-        <li>The app asks for no permissions: no camera, no microphone, no location, and no
-          notifications. There is no account, no server, and no tracking.</li>
-        <li>The only thing it remembers is your light or dark theme, in your browser.</li>
-      </ul>
+      <p>Paste a YouTube link or open a video file.</p>
+      <p class="welcome__why">
+        Why only these two? So the app needs no server and no permissions. A file plays from your
+        disk and is never uploaded. A YouTube link plays in YouTube's own player.
+      </p>
     </div>
   </section>
 </template>;

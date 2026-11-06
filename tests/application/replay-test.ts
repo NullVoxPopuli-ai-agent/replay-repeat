@@ -57,7 +57,7 @@ module("Application | replay", function (hooks) {
     await visit("/");
 
     assert.dom("[data-test-welcome] h2").hasText("Pick a video to start");
-    assert.dom("[data-test-welcome]").includesText("asks for no permissions");
+    assert.dom("[data-test-welcome]").includesText("no server and no permissions");
     assert.dom("[data-test-welcome] svg").hasAria("hidden", "true");
 
     await loadTheTestVideo();

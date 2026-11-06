@@ -221,27 +221,20 @@ kbd {
     font-size: 1.25rem;
   }
 
-  h3 {
-    margin: var(--gap-4) 0 var(--gap);
-    font-size: 1rem;
-  }
-
-  p,
-  ul {
+  p {
     margin: 0;
   }
 
-  ul {
-    display: grid;
-    gap: var(--gap);
+  .welcome__why {
     margin-block-start: var(--gap-2);
-    padding-inline-start: 1.25rem;
+    font-size: 0.9rem;
+    color: color-mix(in oklab, var(--color-text) 75%, transparent);
   }
 }
 
 .welcome__art {
-  flex: 0 0 8rem;
-  width: 8rem;
+  flex: 0 0 6rem;
+  width: 6rem;
 }
 
 .welcome__text {
