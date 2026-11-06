@@ -12,6 +12,14 @@ export interface Player {
    */
   readonly rate: number;
   setRate(rate: number): void;
+
+  /**
+   * From 0 to 1. Muting keeps the volume for when the sound comes back.
+   */
+  readonly volume: number;
+  readonly muted: boolean;
+  setVolume(volume: number): void;
+  setMuted(muted: boolean): void;
   seek(seconds: number): void;
   play(): void;
   pause(): void;
@@ -48,6 +56,22 @@ export class FilePlayer implements Player {
 
   setRate(rate: number) {
     this.#video.playbackRate = rate;
+  }
+
+  get volume() {
+    return this.#video.volume;
+  }
+
+  get muted() {
+    return this.#video.muted;
+  }
+
+  setVolume(volume: number) {
+    this.#video.volume = volume;
+  }
+
+  setMuted(muted: boolean) {
+    this.#video.muted = muted;
   }
 
   seek(seconds: number) {
@@ -98,6 +122,29 @@ export class YouTubePlayer implements Player {
 
   setRate(rate: number) {
     this.#player.setPlaybackRate(rate);
+  }
+
+  /**
+   * YouTube counts the volume from 0 to 100.
+   */
+  get volume() {
+    return this.#player.getVolume() / 100;
+  }
+
+  get muted() {
+    return this.#player.isMuted();
+  }
+
+  setVolume(volume: number) {
+    this.#player.setVolume(Math.round(volume * 100));
+  }
+
+  setMuted(muted: boolean) {
+    if (muted) {
+      this.#player.mute();
+    } else {
+      this.#player.unMute();
+    }
   }
 
   seek(seconds: number) {

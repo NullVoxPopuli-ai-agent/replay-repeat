@@ -51,7 +51,6 @@ export class VideoFile extends Component<Signature> {
       <video
         class="replay__media"
         src={{this.url}}
-        controls
         playsinline
         preload="auto"
         aria-label={{@file.name}}
