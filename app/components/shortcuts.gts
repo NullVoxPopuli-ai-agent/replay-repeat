@@ -21,8 +21,24 @@ export const Shortcuts: TOC<object> = <template>
         <dd>Loop on or off</dd>
       </div>
       <div>
+        <dt><kbd>R</kbd></dt>
+        <dd>Go to the loop start</dd>
+      </div>
+      <div>
         <dt><kbd>K</kbd></dt>
         <dd>Play or pause</dd>
+      </div>
+      <div>
+        <dt><kbd>&lt;</kbd> and <kbd>&gt;</kbd></dt>
+        <dd>Slower or faster</dd>
+      </div>
+      <div>
+        <dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt>
+        <dd>Undo a marker move (<kbd>⌘</kbd> + <kbd>Z</kbd> on a Mac)</dd>
+      </div>
+      <div>
+        <dt><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd></dt>
+        <dd>Redo a marker move</dd>
       </div>
     </dl>
     <p>When the loop is on, going back stops at the loop start.</p>

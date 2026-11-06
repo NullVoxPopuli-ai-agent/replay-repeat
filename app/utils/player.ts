@@ -6,6 +6,12 @@ export interface Player {
   readonly duration: number;
   readonly paused: boolean;
   readonly ended: boolean;
+
+  /**
+   * The playback speed: 1 is normal, 0.5 is half speed.
+   */
+  readonly rate: number;
+  setRate(rate: number): void;
   seek(seconds: number): void;
   play(): void;
   pause(): void;
@@ -34,6 +40,14 @@ export class FilePlayer implements Player {
 
   get ended() {
     return this.#video.ended;
+  }
+
+  get rate() {
+    return this.#video.playbackRate;
+  }
+
+  setRate(rate: number) {
+    this.#video.playbackRate = rate;
   }
 
   seek(seconds: number) {
@@ -76,6 +90,14 @@ export class YouTubePlayer implements Player {
 
   get ended() {
     return this.#player.getPlayerState() === YT.PlayerState.ENDED;
+  }
+
+  get rate() {
+    return this.#player.getPlaybackRate();
+  }
+
+  setRate(rate: number) {
+    this.#player.setPlaybackRate(rate);
   }
 
   seek(seconds: number) {

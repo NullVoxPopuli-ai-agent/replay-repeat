@@ -93,8 +93,38 @@ main {
   border-radius: var(--radius);
 }
 
-.replay__time {
+.replay__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-2);
+}
+
+.replay__time,
+.replay__looping,
+.replay__rate {
   font-variant-numeric: tabular-nums;
+}
+
+.replay__looping {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap);
+  padding: 0 var(--padding-2);
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--color-primary) 30%, transparent);
+}
+
+/* The filled range is gray while the loop is off, so its color means "looping" */
+.replay__markers:not([data-looping]) {
+  --range-slider-range-color: color-mix(in oklab, var(--color-text) 25%, transparent);
+}
+
+.replay svg {
+  width: 1.25em;
+  height: 1.25em;
+  vertical-align: middle;
 }
 
 .replay__playhead {
@@ -109,7 +139,19 @@ main {
 .replay__buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--gap-2);
+  gap: var(--gap-2) var(--gap-4);
+
+  > [role="group"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--gap-2);
+  }
+}
+
+.replay__rate {
+  min-width: 3.5ch;
+  text-align: center;
 }
 
 .shortcuts {

@@ -6,7 +6,15 @@ import { modifier } from "ember-modifier";
 import { Button, ToggleButton } from "nvp.ui";
 
 import { RangeSlider } from "#pr-nvp.ui-122/range-slider.gts";
+import { History } from "#utils/history.ts";
 import { formatTime } from "#utils/time.ts";
+import Minus from "~icons/mdi/minus";
+import Plus from "~icons/mdi/plus";
+import Redo from "~icons/mdi/redo";
+import Repeat from "~icons/mdi/repeat";
+import RepeatOff from "~icons/mdi/repeat-off";
+import SkipPrevious from "~icons/mdi/skip-previous";
+import Undo from "~icons/mdi/undo";
 
 import { Shortcuts } from "./shortcuts.gts";
 import { VideoFile } from "./video-file.gts";
@@ -25,6 +33,20 @@ interface Signature {
  * Markers move in tenths of a second.
  */
 const STEP = 0.1;
+
+/**
+ * The speeds that YouTube supports, so files and YouTube have the same steps.
+ */
+const RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+interface Markers {
+  start: number;
+  end: number | undefined;
+}
+
+const sameMarkers = (a: Markers, b: Markers) => a.start === b.start && a.end === b.end;
+
+const formatRate = (rate: number) => `${rate}×`;
 
 /**
  * After a seek, a player can report the old time for a few frames.
@@ -64,6 +86,10 @@ export class Replay extends Component<Signature> {
    * which is unknown for YouTube until the video loads.
    */
   @tracked chosenEnd: number | undefined;
+
+  @tracked rate = 1;
+
+  markers = new History<Markers>({ start: 0, end: undefined }, sameMarkers);
 
   #seekedAt = 0;
 
@@ -116,22 +142,72 @@ export class Replay extends Component<Signature> {
     this.looping = !this.looping;
   };
 
+  toLoopStart = () => {
+    this.seek(this.loopStart);
+  };
+
+  setRate(rate: number) {
+    this.player?.setRate(rate);
+    this.rate = rate;
+  }
+
+  get canSlowDown() {
+    return RATES.some((rate) => rate < this.rate);
+  }
+
+  get canSpeedUp() {
+    return RATES.some((rate) => rate > this.rate);
+  }
+
+  slower = () => {
+    this.setRate(RATES.findLast((rate) => rate < this.rate) ?? this.rate);
+  };
+
+  faster = () => {
+    this.setRate(RATES.find((rate) => rate > this.rate) ?? this.rate);
+  };
+
+  /**
+   * Live while a marker moves. `recordMarkers` makes the undo step when the move ends.
+   */
   setMarkers = (start: number, end: number) => {
     this.chosenStart = start;
     this.chosenEnd = end;
   };
 
+  recordMarkers = () => {
+    this.markers.record({ start: this.chosenStart, end: this.chosenEnd });
+  };
+
+  applyMarkers(markers: Markers | undefined) {
+    if (!markers) return;
+
+    this.chosenStart = markers.start;
+    this.chosenEnd = markers.end;
+  }
+
+  undo = () => {
+    this.applyMarkers(this.markers.undo());
+  };
+
+  redo = () => {
+    this.applyMarkers(this.markers.redo());
+  };
+
   markStart = () => {
     this.chosenStart = Math.max(0, Math.min(toStep(this.now), this.loopEnd - STEP));
+    this.recordMarkers();
   };
 
   markEnd = () => {
     this.chosenEnd = Math.min(this.duration, Math.max(toStep(this.now), this.loopStart + STEP));
+    this.recordMarkers();
   };
 
   resetMarkers = () => {
     this.chosenStart = 0;
     this.chosenEnd = undefined;
+    this.recordMarkers();
   };
 
   tick = () => {
@@ -144,6 +220,11 @@ export class Replay extends Component<Signature> {
     if (time !== this.now) this.now = time;
     if (player.duration !== this.duration) this.duration = player.duration;
     if (player.paused !== this.paused) this.paused = player.paused;
+
+    /**
+     * YouTube's own settings menu can change the speed too.
+     */
+    if (player.rate !== this.rate) this.rate = player.rate;
 
     if (!this.looping || performance.now() - this.#seekedAt < SEEK_SETTLE_MS) return;
 
@@ -160,8 +241,14 @@ export class Replay extends Component<Signature> {
   };
 
   onKey = (event: KeyboardEvent) => {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (isTyping(event.target)) return;
+    if (event.altKey) return;
+
+    if (event.ctrlKey || event.metaKey) {
+      this.onUndoKey(event);
+
+      return;
+    }
 
     if (event.key >= "0" && event.key <= "9" && event.key.length === 1) {
       event.preventDefault();
@@ -189,12 +276,42 @@ export class Replay extends Component<Signature> {
         this.togglePlay();
 
         break;
+      case "r":
+      case "R":
+        this.toLoopStart();
+
+        break;
+      case "<":
+        this.slower();
+
+        break;
+      case ">":
+        this.faster();
+
+        break;
       default:
         return;
     }
 
     event.preventDefault();
   };
+
+  /**
+   * Ctrl or Cmd with Z undoes, with Shift+Z or Y it redoes, as in other apps.
+   */
+  onUndoKey(event: KeyboardEvent) {
+    const key = event.key.toLowerCase();
+
+    if (key === "z" && !event.shiftKey) {
+      this.undo();
+    } else if ((key === "z" && event.shiftKey) || key === "y") {
+      this.redo();
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+  }
 
   /**
    * Runs for as long as the replay is on the page:
@@ -243,14 +360,27 @@ export class Replay extends Component<Signature> {
 
       {{#if this.player}}
         <div class="replay__controls surface">
-          <div class="replay__time" data-test-time>
-            <span data-test-now>{{formatTime this.now}}</span>
-            /
-            <span data-test-duration>{{formatTime this.duration}}</span>
+          <div class="replay__status">
+            <span class="replay__time" data-test-time>
+              <span data-test-now>{{formatTime this.now}}</span>
+              /
+              <span data-test-duration>{{formatTime this.duration}}</span>
+            </span>
+
+            {{#if this.looping}}
+              <span class="replay__looping" data-test-looping>
+                <Repeat aria-hidden="true" />
+                Looping
+                {{formatTime this.loopStart}}
+                to
+                {{formatTime this.loopEnd}}
+              </span>
+            {{/if}}
           </div>
 
           <RangeSlider
             class="replay__markers"
+            data-looping={{this.looping}}
             @label="Loop markers"
             @startLabel="Loop start"
             @endLabel="Loop end"
@@ -259,6 +389,7 @@ export class Replay extends Component<Signature> {
             @start={{this.loopStart}}
             @end={{this.loopEnd}}
             @onChange={{this.setMarkers}}
+            @onCommit={{this.recordMarkers}}
             @formatValue={{formatTime}}
             as |track|
           >
@@ -266,15 +397,62 @@ export class Replay extends Component<Signature> {
           </RangeSlider>
 
           <div class="replay__buttons">
-            <Button @variant="primary" @onClick={{this.togglePlay}} data-test-play>
-              {{if this.paused "Play" "Pause"}}
-            </Button>
-            <ToggleButton @pressed={{this.looping}} @onClick={{this.toggleLoop}} data-test-loop>
-              Loop
-            </ToggleButton>
-            <Button @onClick={{this.markStart}}>Set start here</Button>
-            <Button @onClick={{this.markEnd}}>Set end here</Button>
-            <Button @variant="bare" @onClick={{this.resetMarkers}} data-test-reset>Reset markers</Button>
+            <div role="group" aria-label="Playback">
+              <Button @variant="primary" @onClick={{this.togglePlay}} data-test-play>
+                {{if this.paused "Play" "Pause"}}
+              </Button>
+              <ToggleButton
+                @pressed={{this.looping}}
+                @variant={{if this.looping "primary"}}
+                @onClick={{this.toggleLoop}}
+                data-test-loop
+              >
+                {{#if this.looping}}
+                  <Repeat aria-hidden="true" />
+                {{else}}
+                  <RepeatOff aria-hidden="true" />
+                {{/if}}
+                Loop
+              </ToggleButton>
+              <Button @onClick={{this.toLoopStart}} data-test-to-loop-start>
+                <:start><SkipPrevious aria-hidden="true" /></:start>
+                <:default>Go to loop start</:default>
+              </Button>
+            </div>
+
+            <div role="group" aria-label="Loop markers">
+              <Button @onClick={{this.markStart}}>Set start here</Button>
+              <Button @onClick={{this.markEnd}}>Set end here</Button>
+              <Button
+                aria-label="Undo"
+                @disabled={{unless this.markers.canUndo "No marker move to undo"}}
+                @onClick={{this.undo}}
+                data-test-undo
+              ><Undo aria-hidden="true" /></Button>
+              <Button
+                aria-label="Redo"
+                @disabled={{unless this.markers.canRedo "No marker move to redo"}}
+                @onClick={{this.redo}}
+                data-test-redo
+              ><Redo aria-hidden="true" /></Button>
+              <Button @variant="bare" @onClick={{this.resetMarkers}} data-test-reset>Reset markers</Button>
+            </div>
+
+            <div role="group" aria-label="Speed" class="replay__speed">
+              <Button
+                aria-label="Slower"
+                @disabled={{unless this.canSlowDown "Already the slowest speed"}}
+                @onClick={{this.slower}}
+                data-test-slower
+              ><Minus aria-hidden="true" /></Button>
+              <span class="replay__rate" data-test-rate>{{formatRate this.rate}}</span>
+              <Button
+                aria-label="Faster"
+                @disabled={{unless this.canSpeedUp "Already the fastest speed"}}
+                @onClick={{this.faster}}
+                data-test-faster
+              ><Plus aria-hidden="true" /></Button>
+            </div>
           </div>
         </div>
 
