@@ -260,6 +260,32 @@ module("Application | replay", function (hooks) {
     await click("[data-test-play]");
   });
 
+  test("the pointer target of each marker is under the marker", async function (assert) {
+    await loadTheTestVideo();
+
+    for (const input of document.querySelectorAll<HTMLInputElement>(
+      ".replay__markers input[type=range]",
+    )) {
+      const thumb = input.nextElementSibling;
+
+      if (!thumb) throw new Error("No visual thumb follows the input");
+
+      /**
+       * `elementFromPoint` finds only what is in the viewport.
+       */
+      thumb.scrollIntoView({ block: "center", inline: "center" });
+
+      const visual = thumb.getBoundingClientRect();
+      const x = visual.left + visual.width / 2;
+      const y = visual.top + visual.height / 2;
+      const hit = document.elementFromPoint(x, y) === input ? "hit" : "miss";
+
+      assert.step(`${input.getAttribute("aria-label")} ${hit}`);
+    }
+
+    assert.verifySteps(["Loop start hit", "Loop end hit"]);
+  });
+
   test("a marker moves, and the number keys still work from its thumb", async function (assert) {
     await loadTheTestVideo();
     await seekTo(7, "0:07.0");
