@@ -278,7 +278,12 @@ export class Replay extends Component<Signature> {
 
     if (time !== this.now) this.now = time;
     if (player.duration !== this.duration) this.duration = player.duration;
-    if (player.paused !== this.paused) this.paused = player.paused;
+
+    if (player.paused !== this.paused) {
+      this.paused = player.paused;
+
+      if (!player.paused) this.started(time);
+    }
 
     this.syncRate(player);
 
@@ -295,6 +300,20 @@ export class Replay extends Component<Signature> {
       player.play();
     }
   };
+
+  /**
+   * Playback that starts outside the loop starts at the loop start,
+   * for example on a link with `loop_start`, where the video is at 0:00.
+   *
+   * This runs for any way to play: the Play button, the K key,
+   * and YouTube's own controls.
+   */
+  started(time: number) {
+    if (!this.looping) return;
+    if (time >= this.loopStart && time < this.loopEnd) return;
+
+    this.seek(this.loopStart);
+  }
 
   /**
    * The URL holds the speed. A new speed there goes to the player.
