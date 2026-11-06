@@ -1,7 +1,7 @@
 # replay-repeat
 
 Replay part of a video until you know it.
-Load a YouTube link or a video file from your disk.
+Load a YouTube link or a video file from your disk. You can drop a video file anywhere on the page.
 
 | key                | action                           |
 | :----------------- | :------------------------------- |

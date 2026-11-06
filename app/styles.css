@@ -206,6 +206,23 @@ kbd {
   border-radius: var(--radius);
 }
 
+/**
+ * Shows while a file is over the page.
+ * It takes no pointer events, so the drop reaches the page.
+ */
+.page-drop {
+  position: fixed;
+  inset: var(--padding-2);
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  border: 3px dashed var(--color-primary);
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--color-page-background) 85%, transparent);
+  pointer-events: none;
+}
+
 .welcome {
   display: flex;
   flex-wrap: wrap;

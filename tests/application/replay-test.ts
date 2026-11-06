@@ -3,6 +3,7 @@ import {
   fillIn,
   find,
   findAll,
+  settled,
   triggerEvent,
   triggerKeyEvent,
   visit,
@@ -39,14 +40,32 @@ async function seekTo(seconds: number, shown: string) {
   await waitUntil(() => find("[data-test-now]")?.textContent === shown);
 }
 
+async function theTestVideo() {
+  const blob = await (await fetch(videoUrl)).blob();
+
+  return new File([blob], "ten-seconds.webm", { type: "video/webm" });
+}
+
+/**
+ * A real DragEvent with a file, as the browser makes for a drag from the desktop.
+ */
+async function dragOverPage(type: string, file: File) {
+  const dataTransfer = new DataTransfer();
+
+  dataTransfer.items.add(file);
+  document.body.dispatchEvent(
+    new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }),
+  );
+  await settled();
+}
+
 async function loadTheTestVideo() {
   await visit("/");
   await clickTab("File on disk");
 
-  const blob = await (await fetch(videoUrl)).blob();
-  const file = new File([blob], "ten-seconds.webm", { type: "video/webm" });
-
-  await triggerEvent(".nvp__file-drop input[type=file]", "change", { files: [file] });
+  await triggerEvent(".nvp__file-drop input[type=file]", "change", {
+    files: [await theTestVideo()],
+  });
   await waitFor("[data-test-duration]");
 }
 
@@ -63,6 +82,31 @@ module("Application | replay", function (hooks) {
     await loadTheTestVideo();
 
     assert.dom("[data-test-welcome]").doesNotExist();
+  });
+
+  test("a video dropped anywhere on the page loads", async function (assert) {
+    await visit("/");
+
+    const file = await theTestVideo();
+
+    await dragOverPage("dragenter", file);
+    assert.dom("[data-test-page-drop]").hasText("Drop to load the video");
+
+    await dragOverPage("drop", file);
+    await waitFor("[data-test-duration]");
+
+    assert.dom("[data-test-page-drop]").doesNotExist();
+    assert.dom("video").hasAria("label", "ten-seconds.webm");
+    assert.dom("[data-test-welcome]").doesNotExist();
+  });
+
+  test("a text file dropped on the page is ignored", async function (assert) {
+    await visit("/");
+
+    await dragOverPage("drop", new File(["notes"], "notes.txt", { type: "text/plain" }));
+
+    assert.dom("[data-test-welcome]").exists();
+    assert.dom("video").doesNotExist();
   });
 
   test("a file from disk plays here", async function (assert) {

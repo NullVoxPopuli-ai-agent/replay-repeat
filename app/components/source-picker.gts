@@ -5,6 +5,7 @@ import { on } from "@ember/modifier";
 import { Button, FileDrop } from "nvp.ui";
 import { Tabs } from "nvp.ui/tabs";
 
+import { fileSource, MEDIA_FILES } from "#utils/source.ts";
 import { youTubeIdOf } from "#utils/youtube.ts";
 
 import type { Source } from "#utils/source.ts";
@@ -36,9 +37,9 @@ export class SourcePicker extends Component<Signature> {
   };
 
   loadFiles = (files: File[]) => {
-    const file = files[0];
+    const source = fileSource(files);
 
-    if (file) this.args.onSource({ kind: "file", file });
+    if (source) this.args.onSource(source);
   };
 
   <template>
@@ -64,7 +65,7 @@ export class SourcePicker extends Component<Signature> {
       </Tab>
 
       <Tab @label="File on disk">
-        <FileDrop @accept="video/*,audio/*" @onFiles={{this.loadFiles}} as |zone|>
+        <FileDrop @accept={{MEDIA_FILES}} @onFiles={{this.loadFiles}} as |zone|>
           {{#if zone.isDragging}}
             Let go to load the video
           {{else}}

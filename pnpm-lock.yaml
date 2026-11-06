@@ -23,6 +23,9 @@ importers:
       ember-modifier:
         specifier: ^4.3.0
         version: 4.3.0(@babel/core@7.29.13)
+      ember-primitives:
+        specifier: ^0.64.0
+        version: 0.64.0(@babel/core@7.29.13)(@ember/test-helpers@5.8.0(@babel/core@7.29.13))(@ember/test-waiters@4.1.2)(@glimmer/component@2.2.1)(@glint/template@1.11.1)(ember-modifier@4.3.0(@babel/core@7.29.13))(ember-resources@7.1.0(@glimmer/component@2.2.1)(@glint/template@1.11.1))
       ember-source:
         specifier: ~7.4.0
         version: 7.4.0(@glimmer/component@2.2.1)

@@ -25,7 +25,7 @@ export const Welcome: TOC<object> = <template>
 
     <div class="welcome__text">
       <h2 id="welcome-title">Pick a video to start</h2>
-      <p>Paste a YouTube link or open a video file.</p>
+      <p>Paste a YouTube link, or drop a video file anywhere on this page.</p>
       <p class="welcome__why">
         Why only these two? So the app needs no server and no permissions. A file plays from your
         disk and is never uploaded. A YouTube link plays in YouTube's own player.
