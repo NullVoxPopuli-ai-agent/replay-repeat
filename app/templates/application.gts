@@ -12,7 +12,7 @@ import { Replay } from "#components/replay.gts";
 import { SourcePicker } from "#components/source-picker.gts";
 import { Welcome } from "#components/welcome.gts";
 import { NEW_VIDEO, PARAMS } from "#utils/params.ts";
-import { fileSource, MEDIA_FILES } from "#utils/source.ts";
+import { fileSource, isMedia } from "#utils/source.ts";
 import { youTubeIdOf } from "#utils/youtube.ts";
 
 import type UrlStateService from "#services/url-state.ts";
@@ -26,6 +26,11 @@ export default class Application extends Component {
    * The key makes each loaded file a new replay, also the same file twice.
    */
   @tracked file: { key: string; source: Source } | undefined;
+
+  /**
+   * Why the last drop did not load, so that a drop never fails without a word.
+   */
+  @tracked dropError: string | undefined;
 
   /**
    * A YouTube video in the URL wins over a file.
@@ -46,6 +51,8 @@ export default class Application extends Component {
   }
 
   load = (source: Source) => {
+    this.dropError = undefined;
+
     if (source.kind === "youtube") {
       this.file = undefined;
       this.urlState.update({ ...NEW_VIDEO, [PARAMS.youtube]: source.id });
@@ -57,7 +64,18 @@ export default class Application extends Component {
     this.urlState.update({ ...NEW_VIDEO, [PARAMS.youtube]: null });
   };
 
+  /**
+   * The page takes any file, so a file that is not media gets a message.
+   */
   loadFiles = (files: File[]) => {
+    const file = files[0];
+
+    if (file && !isMedia(file)) {
+      this.dropError = `${file.name} is not a video or audio file.`;
+
+      return;
+    }
+
     const source = fileSource(files);
 
     if (source) this.load(source);
@@ -65,7 +83,7 @@ export default class Application extends Component {
 
   <template>
     <Shell>
-      <DocumentFileDrop @accept={{MEDIA_FILES}} @onFiles={{this.loadFiles}} as |page|>
+      <DocumentFileDrop @onFiles={{this.loadFiles}} as |page|>
         {{#if page.isDragging}}
           <div class="page-drop" data-test-page-drop>Drop to load the video</div>
         {{/if}}
@@ -84,6 +102,10 @@ export default class Application extends Component {
 
         <main>
           <SourcePicker @onSource={{this.load}} />
+
+          {{#if this.dropError}}
+            <p class="replay__error" role="alert" data-test-drop-error>{{this.dropError}}</p>
+          {{/if}}
 
           {{! A new key starts a new replay, with a fresh undo history. }}
           {{#each this.sources key="key" as |item|}}

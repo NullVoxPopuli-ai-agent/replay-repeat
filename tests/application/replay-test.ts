@@ -143,13 +143,32 @@ module("Application | replay", function (hooks) {
     await dragOverPage("drop", file);
   });
 
-  test("a text file dropped on the page is ignored", async function (assert) {
+  test("a text file dropped on the page says why it did not load", async function (assert) {
     await visit("/");
 
     await dragOverPage("drop", new File(["notes"], "notes.txt", { type: "text/plain" }));
 
+    assert.dom("[data-test-drop-error]").hasText("notes.txt is not a video or audio file.");
     assert.dom("[data-test-welcome]").exists();
     assert.dom("video").doesNotExist();
+
+    await dragOverPage("drop", await theTestVideo());
+    await waitFor("[data-test-duration]");
+
+    assert.dom("[data-test-drop-error]").doesNotExist("a video that loads clears the message");
+  });
+
+  test("a video with no type, as some systems give, still loads", async function (assert) {
+    await visit("/");
+
+    const video = await theTestVideo();
+
+    for (const name of ["ten-seconds.mkv", "ten-seconds"]) {
+      await dragOverPage("drop", new File([video], name, { type: "" }));
+      await waitFor(`video[aria-label="${name}"]`);
+
+      assert.dom("[data-test-drop-error]").doesNotExist(`${name} loads`);
+    }
   });
 
   test("a file from disk plays here", async function (assert) {
