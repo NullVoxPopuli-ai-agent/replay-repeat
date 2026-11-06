@@ -250,8 +250,8 @@ kbd {
 }
 
 .welcome__art {
-  flex: 0 0 6rem;
-  width: 6rem;
+  flex: 0 0 9rem;
+  width: 9rem;
 }
 
 .welcome__text {
@@ -259,32 +259,82 @@ kbd {
   max-width: 40rem;
 }
 
-.welcome__tv {
-  fill: var(--color-primary);
+.welcome__art * {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.welcome__screen {
-  fill: var(--color-page-background);
+.welcome__bob {
+  animation: welcome-bob 2.4s ease-in-out infinite;
 }
 
-.welcome__face,
-.welcome__fill {
-  fill: var(--color-text);
+.welcome__eyes {
+  animation: welcome-blink 4s infinite;
 }
 
-.welcome__cheek {
-  fill: var(--color-danger);
-  opacity: 0.5;
+.welcome__sparkle {
+  animation: welcome-twinkle 1.6s ease-in-out infinite;
 }
 
-.welcome__smile,
-.welcome__line {
-  fill: none;
-  stroke: var(--color-text);
-  stroke-width: 4;
-  stroke-linecap: round;
+.welcome__sparkle--late {
+  animation-delay: -0.6s;
 }
 
-.welcome__line {
-  stroke: var(--color-primary);
+.welcome__sparkle--later {
+  animation-delay: -1.1s;
+}
+
+.welcome__heart {
+  animation: welcome-heart 3s ease-out infinite;
+}
+
+.welcome__heart--late {
+  animation-delay: -1.5s;
+}
+
+@keyframes welcome-bob {
+  50% {
+    translate: 0 -4px;
+  }
+}
+
+@keyframes welcome-blink {
+  0%,
+  92%,
+  100% {
+    scale: 1 1;
+  }
+
+  95% {
+    scale: 1 0.1;
+  }
+}
+
+@keyframes welcome-twinkle {
+  50% {
+    scale: 0.4;
+    opacity: 0.5;
+  }
+}
+
+@keyframes welcome-heart {
+  0% {
+    translate: 0 6px;
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  100% {
+    translate: 0 -18px;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome__art * {
+    animation: none;
+  }
 }
