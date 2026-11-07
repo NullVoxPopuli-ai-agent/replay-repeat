@@ -123,6 +123,22 @@ module("Application | replay", function (hooks) {
     assert.dom("[data-test-welcome]").doesNotExist();
   });
 
+  test("the welcome links to an example with its loop and speed", async function (assert) {
+    await visit("/");
+    assert.dom("[data-test-sample]").hasText("Practice Mama Stew");
+    await click("[data-test-sample]");
+
+    assert.deepEqual(queryParams(), {
+      youtube_video_id: "DSxqCKv28xo",
+      loop_start: "77.6",
+      loop_end: "134.2",
+      loop: "1",
+      speed: "1.25",
+    });
+    assert.dom("[data-test-youtube]").exists();
+    assert.dom("[data-test-welcome]").doesNotExist();
+  });
+
   test("a video dropped anywhere on the page loads", async function (assert) {
     await visit("/");
 

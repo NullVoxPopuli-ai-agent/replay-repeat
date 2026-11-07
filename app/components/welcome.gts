@@ -1,4 +1,19 @@
+import { LinkTo } from "@ember/routing";
+
+import { PARAMS } from "#utils/params.ts";
+
 import type { TOC } from "@ember/component/template-only";
+
+/**
+ * The Mama Stew jazz routine, with its loop and speed already set.
+ */
+const SAMPLE = {
+  [PARAMS.youtube]: "DSxqCKv28xo",
+  [PARAMS.loopStart]: "77.6",
+  [PARAMS.loopEnd]: "134.2",
+  [PARAMS.loop]: "1",
+  [PARAMS.speed]: "1.25",
+};
 
 /**
  * The mascot: a very happy TV, in kawaii pink.
@@ -120,6 +135,9 @@ export const Welcome: TOC<object> = <template>
     <div class="welcome__text">
       <h2 id="welcome-title">Pick a video to start</h2>
       <p>Paste a YouTube link, or drop a video file anywhere on this page.</p>
+      <p>
+        <LinkTo @route="index" @query={{SAMPLE}} data-test-sample>Practice Mama Stew</LinkTo>
+      </p>
       <p class="welcome__why">
         Why only these two? So the app needs no server and no permissions. A file plays from your
         disk and is never uploaded. A YouTube link plays in YouTube's own player.
