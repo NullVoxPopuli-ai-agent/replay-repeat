@@ -48,6 +48,27 @@ function queryParams() {
   return Object.fromEntries(new URL(currentURL(), "https://replay.invalid").searchParams);
 }
 
+/**
+ * A mouse event at a fraction of the width of the timeline.
+ * Chrome gives the mouse pointer id 1, so the drag can capture it.
+ */
+async function pointerAt(type: string, fraction: number) {
+  const scrub = find("[data-test-scrub]");
+
+  if (!scrub) throw new Error("No timeline is rendered");
+
+  const rect = scrub.getBoundingClientRect();
+
+  await triggerEvent(scrub, type, {
+    pointerId: 1,
+    pointerType: "mouse",
+    button: 0,
+    buttons: type === "pointerup" ? 0 : 1,
+    clientX: rect.left + rect.width * fraction,
+    clientY: rect.top + rect.height / 2,
+  });
+}
+
 async function theTestVideo() {
   const blob = await (await fetch(videoUrl)).blob();
 
@@ -328,6 +349,33 @@ module("Application | replay", function (hooks) {
     }
 
     assert.verifySteps(["Loop start hit", "Loop end hit"]);
+  });
+
+  test("hover on the timeline shows the time under the pointer", async function (assert) {
+    await loadTheTestVideo();
+
+    await pointerAt("pointermove", 0.25);
+    assert.dom("[data-test-scrub-time]").hasText("0:02.5");
+    assert.dom("[data-test-now]").hasText("0:00.0", "a hover does not seek");
+
+    await triggerEvent("[data-test-scrub]", "pointerleave");
+    assert.dom("[data-test-scrub-time]").doesNotExist();
+  });
+
+  test("a drag on the timeline scrubs the video", async function (assert) {
+    await loadTheTestVideo();
+
+    await pointerAt("pointerdown", 0.5);
+    assert.dom("[data-test-now]").hasText("0:05.0", "a press seeks");
+
+    await pointerAt("pointermove", 0.8);
+    assert.dom("[data-test-now]").hasText("0:08.0", "a move with the button down seeks");
+
+    await pointerAt("pointerup", 0.8);
+    assert.strictEqual(video().currentTime, 8);
+
+    await pointerAt("pointermove", 0.3);
+    assert.dom("[data-test-now]").hasText("0:08.0", "after the release, a move does not seek");
   });
 
   test("a marker moves, and the number keys still work from its thumb", async function (assert) {

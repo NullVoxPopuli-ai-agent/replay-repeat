@@ -24,6 +24,7 @@ import Undo from "~icons/mdi/undo";
 import VolumeHigh from "~icons/mdi/volume-high";
 import VolumeOff from "~icons/mdi/volume-off";
 
+import { Scrub } from "./scrub.gts";
 import { Shortcuts } from "./shortcuts.gts";
 import { VideoFile } from "./video-file.gts";
 import { YouTubeVideo } from "./video-youtube.gts";
@@ -213,11 +214,11 @@ export class Replay extends Component<Signature> {
     this.muted = player.muted;
   };
 
-  seek(seconds: number) {
+  seek(seconds: number, final = true) {
     if (!this.player) return;
 
     this.#seekedAt = performance.now();
-    this.player.seek(seconds);
+    this.player.seek(seconds, final);
     this.now = seconds;
   }
 
@@ -239,6 +240,10 @@ export class Replay extends Component<Signature> {
 
   toggleLoop = () => {
     this.urlState.update({ [PARAMS.loop]: this.looping ? null : "1" });
+  };
+
+  scrub = (seconds: number, done: boolean) => {
+    this.seek(seconds, done);
   };
 
   toLoopStart = () => {
@@ -727,6 +732,7 @@ export class Replay extends Component<Signature> {
               @formatValue={{formatTime}}
               as |track|
             >
+              <Scrub @duration={{this.duration}} @onSeek={{this.scrub}} />
               <span
                 class="replay__playhead"
                 style={{playheadStyle (track.position this.now)}}

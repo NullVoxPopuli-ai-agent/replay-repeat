@@ -20,7 +20,11 @@ export interface Player {
   readonly muted: boolean;
   setVolume(volume: number): void;
   setMuted(muted: boolean): void;
-  seek(seconds: number): void;
+
+  /**
+   * `final` is false for the steps of a drag on the timeline.
+   */
+  seek(seconds: number, final?: boolean): void;
   play(): void;
   pause(): void;
 }
@@ -147,8 +151,11 @@ export class YouTubePlayer implements Player {
     }
   }
 
-  seek(seconds: number) {
-    this.#player.seekTo(seconds, true);
+  /**
+   * YouTube asks for no requests to its server during a drag, only on the last step.
+   */
+  seek(seconds: number, final = true) {
+    this.#player.seekTo(seconds, final);
   }
 
   play() {

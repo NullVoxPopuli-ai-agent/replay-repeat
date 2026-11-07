@@ -214,6 +214,43 @@ body:has(.replay[data-theatre]) {
   vertical-align: middle;
 }
 
+/**
+ * The scrub area fills the track. The marker thumbs are on top of it.
+ */
+.replay__scrub {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.replay__scrub-line {
+  position: absolute;
+  inset-block: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: color-mix(in oklab, var(--color-text) 40%, transparent);
+  pointer-events: none;
+}
+
+/**
+ * Over the value labels of the markers, which are at the same height.
+ */
+.replay__scrub-time {
+  position: absolute;
+  bottom: calc(100% + var(--padding-1));
+  z-index: 4;
+  transform: translateX(-50%);
+  padding-inline: var(--padding-1);
+  border-radius: var(--radius);
+  background: var(--color-text);
+  color: var(--color-page-background);
+  font-size: 0.8rem;
+  line-height: var(--line-height);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .replay__playhead {
   position: absolute;
   inset-block: 0;
