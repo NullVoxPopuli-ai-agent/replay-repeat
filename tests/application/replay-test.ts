@@ -615,6 +615,43 @@ module("Application | replay", function (hooks) {
     assert.dom("[data-test-replay]").exists();
   });
 
+  test("a TikTok link goes in the URL, in place of a YouTube video", async function (assert) {
+    await visit("/?youtube_video_id=dQw4w9WgXcQ&loop=1&speed=1.5");
+    await clickTab("TikTok link");
+    await fillIn(
+      'input[name="tiktok-link"]',
+      "https://www.tiktok.com/@scout2015/video/6718335390845095173",
+    );
+    await click('form:has([name="tiktok-link"]) button');
+
+    assert.deepEqual(queryParams(), { tiktok_video_id: "6718335390845095173", speed: "1.5" });
+    assert
+      .dom("[data-test-tiktok]")
+      .hasAttribute("src", /^https:\/\/www\.tiktok\.com\/player\/v1\/6718335390845095173\?/);
+    assert.dom("[data-test-youtube]").doesNotExist();
+  });
+
+  test("a short TikTok link asks for the full link", async function (assert) {
+    await visit("/");
+    await clickTab("TikTok link");
+    await fillIn('input[name="tiktok-link"]', "https://vm.tiktok.com/ZMabcdef/");
+    await click('form:has([name="tiktok-link"]) button');
+
+    assert
+      .dom("#tiktok-link-error")
+      .hasText(
+        "A short link has no video id in it. Open the link, then copy the full link from the address bar.",
+      );
+    assert.dom('input[name="tiktok-link"]').hasAria("invalid", "true");
+    assert.dom("[data-test-tiktok]").doesNotExist();
+  });
+
+  test("a TikTok video id that is not one is ignored", async function (assert) {
+    await visit("/?tiktok_video_id=not-an-id");
+
+    assert.dom("[data-test-welcome]").exists();
+  });
+
   test("a YouTube video id that is not one is ignored", async function (assert) {
     await visit("/?youtube_video_id=not-an-id");
 

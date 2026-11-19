@@ -7,6 +7,7 @@ import { Tabs } from "nvp.ui/tabs";
 
 import { isInstagramLink } from "#utils/instagram.ts";
 import { fileSource, MEDIA_FILES } from "#utils/source.ts";
+import { isTikTokShortLink, tikTokIdOf } from "#utils/tiktok.ts";
 import { youTubeIdOf } from "#utils/youtube.ts";
 
 import type { Source } from "#utils/source.ts";
@@ -19,6 +20,7 @@ interface Signature {
 
 export class SourcePicker extends Component<Signature> {
   @tracked linkError: string | undefined;
+  @tracked tikTokError: string | undefined;
 
   loadLink = (event: SubmitEvent) => {
     event.preventDefault();
@@ -38,6 +40,26 @@ export class SourcePicker extends Component<Signature> {
 
     this.linkError = undefined;
     this.args.onSource({ kind: "youtube", id });
+  };
+
+  loadTikTok = (event: SubmitEvent) => {
+    event.preventDefault();
+
+    const form = event.currentTarget as HTMLFormElement;
+    const link = new FormData(form).get("tiktok-link");
+    const text = typeof link === "string" ? link : "";
+    const id = tikTokIdOf(text);
+
+    if (!id) {
+      this.tikTokError = isTikTokShortLink(text)
+        ? "A short link has no video id in it. Open the link, then copy the full link from the address bar."
+        : "That is not a link to a TikTok video.";
+
+      return;
+    }
+
+    this.tikTokError = undefined;
+    this.args.onSource({ kind: "tiktok", id });
   };
 
   loadFiles = (files: File[]) => {
@@ -66,6 +88,27 @@ export class SourcePicker extends Component<Signature> {
           <Button @variant="primary" type="submit">Load</Button>
         </form>
         <p id="link-error" class="replay__error" role="alert">{{this.linkError}}</p>
+      </Tab>
+
+      <Tab @label="TikTok link">
+        <form class="source__form" {{on "submit" this.loadTikTok}}>
+          <label class="source__field">
+            <span>TikTok link</span>
+            <input
+              name="tiktok-link"
+              type="text"
+              inputmode="url"
+              autocomplete="off"
+              placeholder="https://www.tiktok.com/@…/video/…"
+              required
+              aria-invalid={{if this.tikTokError "true"}}
+              aria-describedby="tiktok-link-error"
+            />
+          </label>
+          <Button @variant="primary" type="submit">Load</Button>
+        </form>
+        <p id="tiktok-link-error" class="replay__error" role="alert">{{this.tikTokError}}</p>
+        <p class="source__note">TikTok videos start muted and play at normal speed only.</p>
       </Tab>
 
       <Tab @label="File on disk">

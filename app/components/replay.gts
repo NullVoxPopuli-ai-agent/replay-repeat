@@ -27,6 +27,7 @@ import VolumeOff from "~icons/mdi/volume-off";
 import { Scrub } from "./scrub.gts";
 import { Shortcuts } from "./shortcuts.gts";
 import { VideoFile } from "./video-file.gts";
+import { TikTokVideo } from "./video-tiktok.gts";
 import { YouTubeVideo } from "./video-youtube.gts";
 
 import type UrlStateService from "#services/url-state.ts";
@@ -57,6 +58,8 @@ interface Markers {
 const sameMarkers = (a: Markers, b: Markers) => a.start === b.start && a.end === b.end;
 
 const formatRate = (rate: number) => `${rate}×`;
+
+const NO_RATE = "TikTok videos play at normal speed only";
 
 /**
  * How the player shows: in the page, across the window, or full screen.
@@ -176,7 +179,13 @@ export class Replay extends Component<Signature> {
     return this.draft ? this.draft.end : secondsOf(this.urlState.param(PARAMS.loopEnd));
   }
 
+  /**
+   * A player with no speed setting plays at normal speed.
+   * The speed stays in the URL for the next video.
+   */
   get rate() {
+    if (this.player?.canSetRate === false) return 1;
+
     const rate = Number.parseFloat(this.urlState.param(PARAMS.speed) ?? "");
 
     const known = RATES.some((slower) => slower <= rate) && RATES.some((faster) => faster >= rate);
@@ -197,6 +206,10 @@ export class Replay extends Component<Signature> {
 
   get youTubeId() {
     return this.args.source.kind === "youtube" ? this.args.source.id : undefined;
+  }
+
+  get tikTokId() {
+    return this.args.source.kind === "tiktok" ? this.args.source.id : undefined;
   }
 
   get loopStart() {
@@ -347,7 +360,9 @@ export class Replay extends Component<Signature> {
   };
 
   setRate(rate: number) {
-    this.player?.setRate(rate);
+    if (!this.player?.canSetRate) return;
+
+    this.player.setRate(rate);
     this.writeRate(rate);
   }
 
@@ -357,12 +372,19 @@ export class Replay extends Component<Signature> {
     this.urlState.update({ [PARAMS.speed]: rate === 1 ? null : String(rate) });
   }
 
-  get canSlowDown() {
-    return RATES.some((rate) => rate < this.rate);
+  /**
+   * Why a speed button is disabled, or `undefined` when it is not.
+   */
+  get slowerDisabled() {
+    if (this.player?.canSetRate === false) return NO_RATE;
+
+    return RATES.some((rate) => rate < this.rate) ? undefined : "Already the slowest speed";
   }
 
-  get canSpeedUp() {
-    return RATES.some((rate) => rate > this.rate);
+  get fasterDisabled() {
+    if (this.player?.canSetRate === false) return NO_RATE;
+
+    return RATES.some((rate) => rate > this.rate) ? undefined : "Already the fastest speed";
   }
 
   slower = () => {
@@ -481,6 +503,8 @@ export class Replay extends Component<Signature> {
    * so the player is not read again until it settled.
    */
   syncRate(player: Player) {
+    if (!player.canSetRate) return;
+
     if (this.rate !== this.#appliedRate) {
       player.setRate(this.rate);
       this.#appliedRate = this.rate;
@@ -677,6 +701,8 @@ export class Replay extends Component<Signature> {
             <VideoFile @file={{this.file}} @onReady={{this.ready}} />
           {{else if this.youTubeId}}
             <YouTubeVideo @id={{this.youTubeId}} @onReady={{this.ready}} />
+          {{else if this.tikTokId}}
+            <TikTokVideo @id={{this.tikTokId}} @onReady={{this.ready}} />
           {{/if}}
 
           {{#if this.player}}
@@ -763,14 +789,14 @@ export class Replay extends Component<Signature> {
                 <div role="group" aria-label="Speed" class="replay__speed">
                   <Button
                     aria-label="Slower"
-                    @disabled={{unless this.canSlowDown "Already the slowest speed"}}
+                    @disabled={{this.slowerDisabled}}
                     @onClick={{this.slower}}
                     data-test-slower
                   ><Minus aria-hidden="true" /></Button>
                   <span class="replay__rate" data-test-rate>{{formatRate this.rate}}</span>
                   <Button
                     aria-label="Faster"
-                    @disabled={{unless this.canSpeedUp "Already the fastest speed"}}
+                    @disabled={{this.fasterDisabled}}
                     @onClick={{this.faster}}
                     data-test-faster
                   ><Plus aria-hidden="true" /></Button>

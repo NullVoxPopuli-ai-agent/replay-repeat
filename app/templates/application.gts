@@ -13,6 +13,7 @@ import { SourcePicker } from "#components/source-picker.gts";
 import { Welcome } from "#components/welcome.gts";
 import { NEW_VIDEO, PARAMS } from "#utils/params.ts";
 import { fileSource, isMedia } from "#utils/source.ts";
+import { tikTokIdOf } from "#utils/tiktok.ts";
 import { youTubeIdOf } from "#utils/youtube.ts";
 
 import type UrlStateService from "#services/url-state.ts";
@@ -33,16 +34,25 @@ export default class Application extends Component {
   @tracked dropError: string | undefined;
 
   /**
-   * A YouTube video in the URL wins over a file.
+   * A video in the URL wins over a file.
    */
   get sources() {
-    const param = this.urlState.param(PARAMS.youtube);
-    const id = param ? youTubeIdOf(param) : undefined;
+    const youTube = this.urlState.param(PARAMS.youtube);
+    const youTubeId = youTube ? youTubeIdOf(youTube) : undefined;
 
-    if (id) {
-      const source: Source = { kind: "youtube", id };
+    if (youTubeId) {
+      const source: Source = { kind: "youtube", id: youTubeId };
 
-      return [{ key: `youtube:${id}`, source }];
+      return [{ key: `youtube:${youTubeId}`, source }];
+    }
+
+    const tikTok = this.urlState.param(PARAMS.tiktok);
+    const tikTokId = tikTok ? tikTokIdOf(tikTok) : undefined;
+
+    if (tikTokId) {
+      const source: Source = { kind: "tiktok", id: tikTokId };
+
+      return [{ key: `tiktok:${tikTokId}`, source }];
     }
 
     if (this.file) return [this.file];
@@ -50,18 +60,23 @@ export default class Application extends Component {
     return [];
   }
 
+  /**
+   * One video at a time: a new source clears the params of the others.
+   */
   load = (source: Source) => {
     this.dropError = undefined;
 
-    if (source.kind === "youtube") {
-      this.file = undefined;
-      this.urlState.update({ ...NEW_VIDEO, [PARAMS.youtube]: source.id });
+    const videos = { [PARAMS.youtube]: null, [PARAMS.tiktok]: null };
+
+    if (source.kind === "file") {
+      this.file = { key: crypto.randomUUID(), source };
+      this.urlState.update({ ...NEW_VIDEO, ...videos });
 
       return;
     }
 
-    this.file = { key: crypto.randomUUID(), source };
-    this.urlState.update({ ...NEW_VIDEO, [PARAMS.youtube]: null });
+    this.file = undefined;
+    this.urlState.update({ ...NEW_VIDEO, ...videos, [PARAMS[source.kind]]: source.id });
   };
 
   /**

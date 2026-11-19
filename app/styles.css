@@ -54,6 +54,10 @@ main {
   }
 }
 
+.source__note {
+  color: color-mix(in oklab, var(--color-text) 70%, transparent);
+}
+
 .replay__error {
   /* --color-danger alone is too light for text in both themes */
   color: color-mix(in oklab, var(--color-danger) 65%, var(--color-text));

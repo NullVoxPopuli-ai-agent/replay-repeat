@@ -5,10 +5,11 @@ import type { QueryParams } from "#services/url-state.ts";
  * so a link opens the same video with the same loop and speed.
  *
  * A file from disk cannot be in a URL,
- * so a file source uses only the params after `youtube_video_id`.
+ * so a file source uses only the params after `tiktok_video_id`.
  */
 export const PARAMS = {
   youtube: "youtube_video_id",
+  tiktok: "tiktok_video_id",
   loopStart: "loop_start",
   loopEnd: "loop_end",
   loop: "loop",
